@@ -1,0 +1,12 @@
+[package]
+name = "home-lab"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.97"
+clap = { version = "4.5.35", features = ["derive"] }
+itertools = "0.14.0"
+tokio = "1.44.1"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
