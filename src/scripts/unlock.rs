@@ -1,4 +1,4 @@
-use crate::command::run_command;
+use crate::child::Child;
 use anyhow::ensure;
 use std::io::{Write, stdin, stdout};
 
@@ -13,12 +13,9 @@ pub fn unlock() -> anyhow::Result<()> {
     ensure!(!password.is_empty());
 
     println!("Unlocking...");
-    let output = run_command(
-        "cryptmount",
-        &["data", "--passwd-fd", "0"],
-        Some(password.to_string()),
-    )?;
-    println!("{}", output);
+    Child::new("sudo", &["./config/scripts/mount-data"])
+        .stdin(password.to_string())
+        .run()?;
 
     Ok(())
 }
