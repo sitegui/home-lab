@@ -9,7 +9,7 @@ pub fn backup() -> anyhow::Result<()> {
 
     let now = Utc::now().to_string();
     tracing::info!("Starting backup at {}", now);
-    fs::write("data/backup-witness", &now).context("failed to write backup witness")?;
+    fs::write("data/last-backup-attempt", &now).context("failed to write next backup witness")?;
 
     let backup_mount = match mount_source("backup") {
         Ok(backup_mount) => backup_mount,
@@ -34,7 +34,12 @@ pub fn backup() -> anyhow::Result<()> {
     )
     .run()?;
 
-    let witness = fs::read_to_string("backup/data/backup-witness")
+    fs::copy(
+        "backup/data/last-backup-attempt",
+        "data/last-successful-backup",
+    )
+    .context("failed to copy backup witness")?;
+    let witness = fs::read_to_string("data/last-successful-backup")
         .context("failed to read backup witness")?;
     ensure!(
         witness == now,
