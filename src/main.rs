@@ -14,13 +14,13 @@ enum Cli {
 }
 
 fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::fmt().with_target(false).init();
 
     match Cli::parse() {
         Cli::Unlock => unlock()?,
         Cli::Backup => backup()?,
     }
 
-    println!("Done");
+    tracing::info!("Done");
     Ok(())
 }

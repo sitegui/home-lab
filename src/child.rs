@@ -153,7 +153,7 @@ fn reprint(
         let reader = BufReader::new(reader);
         for line in reader.lines() {
             let line = line?;
-            println!("{}> {}", prefix, line);
+            tracing::info!("{}> {}", prefix, line);
         }
         Ok(None)
     })
