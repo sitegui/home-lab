@@ -7,8 +7,8 @@ use std::fs;
 pub fn backup() -> anyhow::Result<()> {
     mount_source("data").context("data does not seem to be mounted")?;
 
-    let now = Utc::now().to_string();
-    tracing::info!("Starting backup at {}", now);
+    let now = format!("{}\n", Utc::now());
+    tracing::info!("Starting backup at {}", now.trim());
     fs::write("data/last-backup-attempt", &now).context("failed to write next backup witness")?;
 
     let backup_mount = match mount_source("backup") {
@@ -23,14 +23,7 @@ pub fn backup() -> anyhow::Result<()> {
     tracing::info!("Backing up into {}", backup_mount);
     Child::new(
         "rsync",
-        &[
-            "data",
-            "config",
-            "backup",
-            "--verbose",
-            "--archive",
-            "--delete",
-        ],
+        &["data", "config", "backup", "--archive", "--delete"],
     )
     .run()?;
 
