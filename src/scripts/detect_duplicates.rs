@@ -1,3 +1,4 @@
+use sha1::digest::Output;
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
 use std::fs::{self, File};
@@ -15,15 +16,15 @@ pub fn detect_duplicates(path: &Path) -> anyhow::Result<()> {
     for (index, file_path) in files.into_iter().enumerate() {
         tracing::info!("Processing file {}/{}", index + 1, total_files);
 
-        let mut file = File::open(&file_path)?;
-        let mut hasher = Sha1::new();
-        io::copy(&mut file, &mut hasher)?;
-
-        let hash = hasher.finalize();
-        paths_by_hash
-            .entry(hash)
-            .or_insert_with(Vec::new)
-            .push(file_path);
+        match hash_file(&file_path) {
+            Err(err) => {
+                tracing::error!("Failed to read file {}: {}", file_path.display(), err);
+            }
+            Ok(hash) => paths_by_hash
+                .entry(hash)
+                .or_insert_with(Vec::new)
+                .push(file_path),
+        };
     }
 
     for paths in paths_by_hash.into_values() {
@@ -36,6 +37,13 @@ pub fn detect_duplicates(path: &Path) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn hash_file(file_path: &Path) -> anyhow::Result<Output<Sha1>> {
+    let mut file = File::open(file_path)?;
+    let mut hasher = Sha1::new();
+    io::copy(&mut file, &mut hasher)?;
+    Ok(hasher.finalize())
 }
 
 fn find_files(path: &Path, files: &mut Vec<PathBuf>) -> anyhow::Result<()> {
