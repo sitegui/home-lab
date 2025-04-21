@@ -23,5 +23,8 @@ pub fn unlock() -> anyhow::Result<()> {
         .stdin(password.to_string())
         .run()?;
 
+    tracing::info!("Starting protected services");
+    Child::new("systemctl", &["--user", "start", "protected.target"]).run()?;
+
     Ok(())
 }
