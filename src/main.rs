@@ -1,9 +1,11 @@
 mod child;
+mod list_files;
 mod mount;
 mod scripts;
 
 use crate::scripts::backup::backup;
 use crate::scripts::detect_duplicates::detect_duplicates;
+use crate::scripts::detect_films::detect_films;
 use crate::scripts::prepare_rename_files::prepare_rename_files;
 use crate::scripts::rename_files::rename_files;
 use crate::scripts::unlock::unlock;
@@ -26,6 +28,10 @@ enum Cli {
         path: PathBuf,
         input: PathBuf,
     },
+    DetectFilms {
+        path: PathBuf,
+        output: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -37,6 +43,7 @@ fn main() -> anyhow::Result<()> {
         Cli::DetectDuplicates { path } => detect_duplicates(&path)?,
         Cli::PrepareRenameFiles { path, output } => prepare_rename_files(&path, &output)?,
         Cli::RenameFiles { path, input } => rename_files(&path, &input)?,
+        Cli::DetectFilms { path, output } => detect_films(&path, &output)?,
     }
 
     tracing::info!("Done");

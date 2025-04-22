@@ -1,13 +1,14 @@
+use crate::list_files;
 use sha1::digest::Output;
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
-use std::fs::{self, File};
+use std::fs::File;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 pub fn detect_duplicates(path: &Path) -> anyhow::Result<()> {
     let mut files = Vec::new();
-    find_files(path, &mut files)?;
+    list_files::list_files(path, &mut files)?;
 
     let total_files = files.len();
     tracing::info!("Found {} files", total_files);
@@ -44,20 +45,4 @@ fn hash_file(file_path: &Path) -> anyhow::Result<Output<Sha1>> {
     let mut hasher = Sha1::new();
     io::copy(&mut file, &mut hasher)?;
     Ok(hasher.finalize())
-}
-
-fn find_files(path: &Path, files: &mut Vec<PathBuf>) -> anyhow::Result<()> {
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        let file_type = entry.file_type()?;
-        let path = entry.path();
-
-        if file_type.is_dir() {
-            find_files(&path, files)?;
-        } else if file_type.is_file() {
-            files.push(path);
-        }
-    }
-
-    Ok(())
 }
