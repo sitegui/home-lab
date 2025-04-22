@@ -4,6 +4,8 @@ mod scripts;
 
 use crate::scripts::backup::backup;
 use crate::scripts::detect_duplicates::detect_duplicates;
+use crate::scripts::prepare_rename_files::prepare_rename_files;
+use crate::scripts::rename_files::rename_files;
 use crate::scripts::unlock::unlock;
 use clap::Parser;
 use std::path::PathBuf;
@@ -16,6 +18,14 @@ enum Cli {
     DetectDuplicates {
         path: PathBuf,
     },
+    PrepareRenameFiles {
+        path: PathBuf,
+        output: PathBuf,
+    },
+    RenameFiles {
+        path: PathBuf,
+        input: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -25,6 +35,8 @@ fn main() -> anyhow::Result<()> {
         Cli::Unlock => unlock()?,
         Cli::Backup => backup()?,
         Cli::DetectDuplicates { path } => detect_duplicates(&path)?,
+        Cli::PrepareRenameFiles { path, output } => prepare_rename_files(&path, &output)?,
+        Cli::RenameFiles { path, input } => rename_files(&path, &input)?,
     }
 
     tracing::info!("Done");
