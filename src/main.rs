@@ -6,6 +6,7 @@ mod scripts;
 use crate::scripts::backup::backup;
 use crate::scripts::detect_duplicates::detect_duplicates;
 use crate::scripts::detect_films::detect_films;
+use crate::scripts::hash_files::hash_files;
 use crate::scripts::move_films::move_films;
 use crate::scripts::prepare_rename_files::prepare_rename_files;
 use crate::scripts::rename_files::rename_files;
@@ -18,6 +19,10 @@ enum Cli {
     /// Unlock the internal disk and start up the other services
     Unlock,
     Backup,
+    HashFiles {
+        path: PathBuf,
+        output: PathBuf,
+    },
     DetectDuplicates {
         path: PathBuf,
     },
@@ -44,6 +49,7 @@ fn main() -> anyhow::Result<()> {
     match Cli::parse() {
         Cli::Unlock => unlock()?,
         Cli::Backup => backup()?,
+        Cli::HashFiles { path, output } => hash_files(&path, &output)?,
         Cli::DetectDuplicates { path } => detect_duplicates(&path)?,
         Cli::PrepareRenameFiles { path, output } => prepare_rename_files(&path, &output)?,
         Cli::RenameFiles { path, input } => rename_files(&path, &input)?,
