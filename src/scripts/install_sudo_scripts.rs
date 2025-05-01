@@ -39,8 +39,8 @@ pub fn install_sudo_scripts() -> anyhow::Result<()> {
         restrict_to_root(&target)?;
     }
 
-    println!("{}", sudoers_contents);
     let sudoers_path = Path::new("/etc/sudoers.d/sitegui");
+    tracing::info!("Update {}", sudoers_path.display());
     Child::new("sudo")
         .arg("tee")
         .arg(sudoers_path)
