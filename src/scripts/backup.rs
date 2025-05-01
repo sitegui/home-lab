@@ -22,7 +22,7 @@ pub fn backup() -> anyhow::Result<()> {
         Err(_) => {
             tracing::info!("Will try to mount backup-1");
             Child::new("sudo")
-                .arg(home.join("home-lab/config/mount-backup-1.sh"))
+                .arg(home.join("sudo-scripts/mount-backup-1.sh"))
                 .run()?;
             mount_source(&backup_dir).context("failed to mount backup-1")?
         }
@@ -54,7 +54,7 @@ pub fn backup() -> anyhow::Result<()> {
 
     tracing::info!("Will unmount backup");
     Child::new("sudo")
-        .arg(home.join("home-lab/config/umount-backup-1.sh"))
+        .arg(home.join("sudo-scripts/umount-backup-1.sh"))
         .run()?;
 
     Ok(())

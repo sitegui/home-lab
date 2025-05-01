@@ -24,7 +24,7 @@ pub fn unlock() -> anyhow::Result<()> {
 
     tracing::info!("Unlocking...");
     Child::new("sudo")
-        .arg(home.join("home-lab/config/mount-protected.sh"))
+        .arg(home.join("sudo-scripts/mount-protected.sh"))
         .stdin(password.to_string())
         .run()?;
 
