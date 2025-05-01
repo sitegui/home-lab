@@ -32,14 +32,21 @@ pub fn install_sudo_scripts() -> anyhow::Result<()> {
             target.display()
         )?;
 
-        fs::copy(script, &target)?;
+        Child::new("sudo")
+            .arg("cp")
+            .args([&script, &target])
+            .run()?;
         restrict_to_root(&target)?;
     }
 
     println!("{}", sudoers_contents);
     let sudoers_path = Path::new("/etc/sudoers.d/sitegui");
-    // fs::write(sudoers_path, sudoers_contents)?;
-    // restrict_to_root(sudoers_path)?;
+    Child::new("sudo")
+        .arg("tee")
+        .arg(sudoers_path)
+        .stdin(sudoers_contents)
+        .run()?;
+    restrict_to_root(sudoers_path)?;
 
     Ok(())
 }
