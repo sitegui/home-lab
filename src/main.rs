@@ -1,4 +1,5 @@
 mod child;
+mod home;
 mod list_files;
 mod mount;
 mod scripts;

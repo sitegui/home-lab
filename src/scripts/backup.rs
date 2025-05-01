@@ -1,23 +1,28 @@
 use crate::child::Child;
+use crate::home::home;
 use crate::mount::mount_source;
 use anyhow::{Context, ensure};
 use chrono::Utc;
 use std::fs;
 
 pub fn backup() -> anyhow::Result<()> {
-    mount_source("protected").context("protected disk does not seem to be mounted")?;
+    let home = home()?;
+    let protected_dir = home.join("protected");
+
+    mount_source(&protected_dir).context("protected disk does not seem to be mounted")?;
 
     let now = format!("{}\n", Utc::now());
     tracing::info!("Starting backup at {}", now.trim());
-    fs::write("protected/last-backup-attempt.txt", &now)
-        .context("failed to write protected/last-backup-attempt.txt")?;
+    fs::write(protected_dir.join("last-backup-attempt.txt"), &now)
+        .context("failed to write last-backup-attempt.txt")?;
 
-    let backup_mount = match mount_source("backup-1") {
+    let backup_dir = home.join("backup-1");
+    let backup_mount = match mount_source(&backup_dir) {
         Ok(backup_mount) => backup_mount,
         Err(_) => {
             tracing::info!("Will try to mount backup-1");
-            Child::new("sudo", &["./bare/mount-backup-1.sh"]).run()?;
-            mount_source("backup-1").context("failed to mount backup-1")?
+            Child::new("sudo", &[home.join("home-lab/config/mount-backup-1.sh")]).run()?;
+            mount_source(&backup_dir).context("failed to mount backup-1")?
         }
     };
 
@@ -25,23 +30,24 @@ pub fn backup() -> anyhow::Result<()> {
     Child::new(
         "rsync",
         &[
-            "bare",
-            "protected",
-            "backup-1",
-            "--archive",
-            "--delete",
-            "--verbose",
+            home.join("bare").as_os_str(),
+            home.join("protected").as_os_str(),
+            home.join("backup-1").as_os_str(),
+            "--archive".as_ref(),
+            "--delete".as_ref(),
+            "--verbose".as_ref(),
         ],
     )
     .run()?;
 
+    let last_successful_backup = protected_dir.join("last-successful-backup.txt");
     fs::copy(
-        "backup-1/protected/last-backup-attempt.txt",
-        "protected/last-successful-backup.txt",
+        backup_dir.join("protected/last-backup-attempt.txt"),
+        &last_successful_backup,
     )
-    .context("failed to copy backup-1/protected/last-backup-attempt.txt")?;
-    let witness = fs::read_to_string("protected/last-successful-backup.txt")
-        .context("failed to read protected/last-successful-backup.txt")?;
+    .with_context(|| format!("failed to copy {}", last_successful_backup.display()))?;
+    let witness = fs::read_to_string(&last_successful_backup)
+        .with_context(|| format!("failed to read {}", last_successful_backup.display()))?;
     ensure!(
         witness == now,
         "the backup witness file content is not the expected one"
@@ -49,7 +55,7 @@ pub fn backup() -> anyhow::Result<()> {
     tracing::info!("Witness file has expected content, backup is up to date");
 
     tracing::info!("Will unmount backup");
-    Child::new("sudo", &["./bare/umount-backup-1.sh"]).run()?;
+    Child::new("sudo", &[home.join("home-lab/config/umount-backup-1.sh")]).run()?;
 
     Ok(())
 }

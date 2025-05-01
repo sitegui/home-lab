@@ -1,5 +1,6 @@
 use anyhow::{Context, bail};
 use itertools::Itertools;
+use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Command, ExitStatus, Stdio};
 use std::thread;
@@ -8,7 +9,7 @@ use std::thread::JoinHandle;
 #[derive(Debug)]
 pub struct Child<'a> {
     program: &'a str,
-    args: &'a [&'a str],
+    args: Vec<&'a OsStr>,
     stdin: Option<String>,
     capture_stdout: bool,
     capture_stderr: bool,
@@ -23,10 +24,10 @@ pub struct ChildOutput {
 }
 
 impl<'a> Child<'a> {
-    pub fn new(program: &'a str, args: &'a [&'a str]) -> Self {
+    pub fn new(program: &'a str, args: &'a [impl AsRef<OsStr>]) -> Self {
         Child {
             program,
-            args,
+            args: args.iter().map(|a| a.as_ref()).collect(),
             stdin: None,
             capture_stdout: false,
             capture_stderr: false,
@@ -55,7 +56,14 @@ impl<'a> Child<'a> {
     }
 
     pub fn run(self) -> anyhow::Result<ChildOutput> {
-        tracing::debug!("Run `{} {}`", self.program, self.args.iter().format(" "));
+        tracing::debug!(
+            "Run `{} {}`",
+            self.program,
+            self.args
+                .iter()
+                .map(|arg| arg.to_string_lossy())
+                .format(" ")
+        );
 
         let mut child = Command::new(self.program)
             .args(self.args)

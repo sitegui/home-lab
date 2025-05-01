@@ -1,4 +1,5 @@
 use crate::child::Child;
+use crate::home::home;
 use crate::list_files::list_files;
 use anyhow::Context;
 use itertools::Itertools;
@@ -10,9 +11,9 @@ pub fn install_user_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<
     let path = path.as_deref().unwrap_or(Path::new("config"));
     list_files(path, &mut files)?;
 
-    let home = env::var_os("HOME").context("missing HOME env var")?;
-    let containers_dir = PathBuf::from(&home).join(".config/containers/systemd");
-    let user_dir = PathBuf::from(home).join(".config/systemd/user");
+    let home = home()?;
+    let containers_dir = home.clone().join(".config/containers/systemd");
+    let user_dir = home.join(".config/systemd/user");
     fs::create_dir_all(&containers_dir)?;
     fs::create_dir_all(&user_dir)?;
 
