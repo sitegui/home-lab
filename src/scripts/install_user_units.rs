@@ -106,16 +106,17 @@ impl UnitFile {
             None
         };
 
-        let restart_name = if extension == "service" || extension == "socket" {
-            Some(name.to_string())
-        } else if extension == "container" {
-            let base_name = name
-                .strip_suffix(".container")
-                .context("invalid container name")?;
-            Some(format!("{}.service", base_name))
-        } else {
-            None
-        };
+        let restart_name =
+            if extension == "service" || extension == "socket" || extension == "timer" {
+                Some(name.to_string())
+            } else if extension == "container" {
+                let base_name = name
+                    .strip_suffix(".container")
+                    .context("invalid container name")?;
+                Some(format!("{}.service", base_name))
+            } else {
+                None
+            };
 
         let contents = fs::read_to_string(&source_path)?;
 
