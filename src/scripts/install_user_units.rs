@@ -5,7 +5,7 @@ use itertools::Itertools;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 
-pub fn install_user_units() -> anyhow::Result<()> {
+pub fn install_user_units(force: bool) -> anyhow::Result<()> {
     let mut files = vec![];
     list_files(Path::new("config/caddy"), &mut files)?;
 
@@ -35,11 +35,12 @@ pub fn install_user_units() -> anyhow::Result<()> {
 
     let mut updated_units = vec![];
     for unit in units {
-        let should_update = match fs::read_to_string(&unit.target_path) {
-            Err(err) if err.kind() == std::io::ErrorKind::NotFound => true,
-            Err(err) => return Err(err.into()),
-            Ok(contents) => contents != unit.contents,
-        };
+        let should_update = force
+            || match fs::read_to_string(&unit.target_path) {
+                Err(err) if err.kind() == std::io::ErrorKind::NotFound => true,
+                Err(err) => return Err(err.into()),
+                Ok(contents) => contents != unit.contents,
+            };
 
         if should_update {
             tracing::info!("Copying {}", unit.target_path.display());
