@@ -52,7 +52,10 @@ pub fn install_sudo_scripts() -> anyhow::Result<()> {
 }
 
 fn restrict_to_root(path: &Path) -> anyhow::Result<()> {
-    Child::new("chown").arg("root:root").arg(path).run()?;
-    Child::new("chmod").arg("700").arg(path).run()?;
+    Child::new("sudo")
+        .args(["chown", "root:root"])
+        .arg(path)
+        .run()?;
+    Child::new("sudo").args(["chmod", "700"]).arg(path).run()?;
     Ok(())
 }
