@@ -48,6 +48,8 @@ enum Cli {
         /// Force copying and restarting the services even when the contents are the same
         #[clap(long)]
         force: bool,
+        /// Look for units to install in this directory
+        path: Option<PathBuf>,
     },
 }
 
@@ -63,7 +65,7 @@ fn main() -> anyhow::Result<()> {
         Cli::RenameFiles { path, input } => rename_files(&path, &input)?,
         Cli::DetectFilms { path, output } => detect_films(&path, &output)?,
         Cli::MoveFilms { path } => move_films(&path)?,
-        Cli::InstallUserUnits { force } => install_user_units(force)?,
+        Cli::InstallUserUnits { force, path } => install_user_units(force, path)?,
     }
 
     tracing::info!("Done");

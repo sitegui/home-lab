@@ -5,9 +5,10 @@ use itertools::Itertools;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 
-pub fn install_user_units(force: bool) -> anyhow::Result<()> {
+pub fn install_user_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
     let mut files = vec![];
-    list_files(Path::new("config/caddy"), &mut files)?;
+    let path = path.as_deref().unwrap_or(Path::new("config"));
+    list_files(path, &mut files)?;
 
     let home = env::var_os("HOME").context("missing HOME env var")?;
     let containers_dir = PathBuf::from(&home).join(".config/containers/systemd");
