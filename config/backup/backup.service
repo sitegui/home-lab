@@ -3,7 +3,7 @@ Description = Backup
 
 [Service]
 WorkingDirectory = %h/home-lab
-ExecStart = target/release/home-lab backup
+ExecStart = %h/home-lab/target/release/home-lab backup
 Restart = on-failure
 RestartSec = 300
 
