@@ -2,8 +2,6 @@ use crate::child::Child;
 use crate::list_files::list_files;
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn detect_films(path: &Path, output: &Path) -> anyhow::Result<()> {
@@ -34,24 +32,6 @@ pub fn detect_films(path: &Path, output: &Path) -> anyhow::Result<()> {
     }
 
     Ok(())
-}
-
-fn take_largest_file(path: &Path) -> anyhow::Result<PathBuf> {
-    let mut largest_size = 0;
-    let mut largest_path = None;
-
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        if entry.file_type()?.is_file() {
-            let size = entry.metadata()?.len();
-            if size > largest_size {
-                largest_size = size;
-                largest_path = Some(entry.path());
-            }
-        }
-    }
-
-    largest_path.context("No files found in directory")
 }
 
 #[derive(Debug, Serialize)]

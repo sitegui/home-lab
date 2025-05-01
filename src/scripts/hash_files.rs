@@ -1,5 +1,4 @@
 use crate::list_files;
-use sha1::digest::Output;
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
 use std::fs::File;
