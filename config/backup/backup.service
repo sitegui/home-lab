@@ -1,0 +1,11 @@
+[Unit]
+Description = Backup
+
+[Service]
+WorkingDirectory = %h/home-lab
+ExecStart = cargo run --release -- backup
+Restart = on-failure
+RestartSec = 300
+
+[Install]
+WantedBy = multi-user.target

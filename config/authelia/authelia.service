@@ -1,20 +1,20 @@
 [Unit]
-Description=Authelia
-Requires=podman.socket
-After=podman.socket
-Requires=caddy.service
-After=caddy.service
-Requires=lldap.service
-After=lldap.service
-Requires=authelia_redis.service
-After=authelia_redis.service
+Description = Authelia
+Requires = podman.socket
+After = podman.socket
+Requires = caddy.service
+After = caddy.service
+Requires = lldap.service
+After = lldap.service
+Requires = authelia-redis.service
+After = authelia-redis.service
 
 [Service]
-WorkingDirectory=%h/bare/authelia
-ExecStart=/usr/bin/podman-compose up
-ExecStop=/usr/bin/podman-compose down
-Restart=always
-RestartSec=10
+WorkingDirectory = %h/home-lab/config/authelia
+ExecStart = /usr/bin/podman-compose up
+ExecStop = /usr/bin/podman-compose down
+Restart = always
+RestartSec = 10
 
 [Install]
-WantedBy=default.target
+WantedBy = default.target

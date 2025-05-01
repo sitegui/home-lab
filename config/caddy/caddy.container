@@ -1,19 +1,19 @@
 [Unit]
 
 [Service]
-Restart=always
-RestartSec=10
+Restart = always
+RestartSec = 10
 
 [Container]
-Image=docker.io/library/caddy:2.9
-Notify=true
-Volume=/home/sitegui/bare/caddy/Caddyfile:/etc/caddy/Caddyfile
-Volume=/home/sitegui/bare/caddy/data:/data
-Volume=/home/sitegui/bare/caddy/config:/config
-Network=caddy.network
-Network=caddy_lldap.network
-Network=caddy_authelia.network
-Network=caddy_jellyfin.network
+Image = docker.io/library/caddy:2.9
+Notify = true
+Volume = %h/home-lab/config/caddy/Caddyfile:/etc/caddy/Caddyfile
+Volume = %h/bare/caddy/data:/data
+Volume = %h/bare/caddy/config:/config
+Network = caddy.network
+Network = caddy-lldap.network
+Network = caddy-authelia.network
+Network = caddy-jellyfin.network
 
 [Install]
-WantedBy=default.target
+WantedBy = default.target

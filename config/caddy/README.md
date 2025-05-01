@@ -11,23 +11,24 @@ services, since they cannot communicate directly.
 
 ## How to add a new app to Caddy
 
-Say you want to expose a new app called bugabuga with the caddy server. These are the steps to take:
+Say you want to expose a new app called "bugabuga" with the caddy server. These are the steps to take:
 
-1. declare a new network in `~/bare/caddy/caddy_bugabuga.network` 
-2. declare in `~/bare/caddy/caddy.container` that it is connected to this new network
-3. declare the new service in `~/bare/caddy/Caddyfile`. You can import:
-   - external_sockets to make it available to the public internet
-   - internal_sockets to make it available only to the local network
-   - logging to enable the default logging
-   - auth to protect the service with single-sign on (should be done for all public services)
-4. update the `~/bare/manual-setup.sh` to install this network and restart caddy
+1. declare a new network in `config/caddy/caddy-bugabuga.network`
+2. declare in `config/caddy/caddy.container` that it is connected to this new network
+3. declare the new service in `config/caddy/Caddyfile`. You can import:
+    - `external_sockets` to make it available to the public internet
+    - `internal_sockets` to make it available only to the local network
+    - `logging` to enable the default logging
+    - `auth` to protect the service with single-sign on (should be done for all public services)
+4. run `cargo run -- install-user-units`
 5. in the service compose file add something like:
+
   ```yaml
   services:
     bugabuga:
       networks:
-        - systemd-caddy_bugabuga
+        - systemd-caddy-bugabuga
   networks:
-    systemd-caddy_bugabuga:
+    systemd-caddy-bugabuga:
       external: true
   ```

@@ -7,6 +7,7 @@ use crate::scripts::backup::backup;
 use crate::scripts::detect_duplicates::detect_duplicates;
 use crate::scripts::detect_films::detect_films;
 use crate::scripts::hash_files::hash_files;
+use crate::scripts::install_user_units::install_user_units;
 use crate::scripts::move_films::move_films;
 use crate::scripts::prepare_rename_files::prepare_rename_files;
 use crate::scripts::rename_files::rename_files;
@@ -41,6 +42,9 @@ enum Cli {
     MoveFilms {
         path: PathBuf,
     },
+    /// Copy all systemd unit files to the user folder, enable them and restart the impacted
+    /// services.
+    InstallUserUnits,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -55,6 +59,7 @@ fn main() -> anyhow::Result<()> {
         Cli::RenameFiles { path, input } => rename_files(&path, &input)?,
         Cli::DetectFilms { path, output } => detect_films(&path, &output)?,
         Cli::MoveFilms { path } => move_films(&path)?,
+        Cli::InstallUserUnits => install_user_units()?,
     }
 
     tracing::info!("Done");
