@@ -9,9 +9,9 @@ RestartSec = 10
 ContainerName = jellyfin
 Image = docker.io/jellyfin/jellyfin:10.10
 UserNS = keep-id
-Volume = %h/bare/jellyfin/config:/config
-Volume = %h/bare/jellyfin/cache:/cache
-Volume = %h/bare/jellyfin/media:/media
+Volume = %h/protected/jellyfin/config:/config
+Volume = %h/protected/jellyfin/cache:/cache
+Volume = %h/protected/jellyfin/media:/media
 Environment = JELLYFIN_PublishedServerUrl=https://film.sitegui.dev
 Network = caddy-jellyfin.network
 
