@@ -1,0 +1,58 @@
+# Note: I use socket activation to get the original socket from systemd, allowing us to have the original ip address
+
+(external_sockets) {
+    bind fd/3 {
+        protocols h1 h2
+    }
+
+    bind fd/4 {
+        protocols h1 h2
+    }
+}
+
+(internal_sockets) {
+    bind fd/5 {
+        protocols h1 h2
+    }
+}
+
+(logging) {
+    log {
+        output file /data/logs/access
+    }
+}
+
+(auth) {
+    forward_auth authelia:9091 {
+        uri /api/authz/forward-auth
+    }
+}
+
+{
+    servers {
+        protocols h1 h2
+    }
+}
+
+film.sitegui.dev {
+    import external_sockets
+    import logging
+    import auth
+
+    reverse_proxy jellyfin:8096
+}
+
+auth.sitegui.dev {
+    import external_sockets
+    import logging
+
+    reverse_proxy authelia:9091
+}
+
+# The port 8080 is configured at the firewall level to only be open for ips from the internal network
+ldap.sitegui.dev:8080 {
+    import internal_sockets
+    import logging
+
+    reverse_proxy lldap:17170
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Authelia Redis
+Requires=podman.socket
+After=podman.socket
+Requires=authelia_redis-network.service
+After=authelia_redis-network.service
+
+[Service]
+WorkingDirectory=%h/bare/authelia/redis
+ExecStart=/usr/bin/podman-compose up
+ExecStop=/usr/bin/podman-compose down
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

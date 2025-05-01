@@ -1,0 +1,13 @@
+[Socket]
+BindIPv6Only=both
+
+# fd/3
+ListenStream=[::]:80
+# fd/4
+ListenStream=[::]:443
+
+# fd/5
+ListenStream=[::]:8080
+
+[Install]
+WantedBy=sockets.target

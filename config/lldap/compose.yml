@@ -1,0 +1,20 @@
+services:
+  lldap:
+    image: docker.io/lldap/lldap:stable-debian-rootless
+    # restarts are managed by systemd
+    restart: "no"
+    userns_mode: keep-id
+    volumes:
+      - ./data:/data
+      - ./secrets:/lldap_secrets
+    environment:
+      - LLDAP_JWT_SECRET_FILE=/lldap_secrets/jwt_secret
+      - LLDAP_KEY_SEED_FILE=/lldap_secrets/key_seed
+      - LLDAP_LDAP_BASE_DN=dc=sitegui,dc=dev
+      - LLDAP_LDAP_USER_DN=sitegui
+      - LLDAP_LDAP_USER_PASS_FILE=/lldap_secrets/ldap_user_pass
+    networks:
+      - systemd-caddy_lldap
+networks:
+  systemd-caddy_lldap:
+    external: true

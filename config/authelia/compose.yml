@@ -1,0 +1,26 @@
+services:
+  authelia:
+    image: docker.io/authelia/authelia:4
+    # restarts are managed by systemd
+    restart: "no"
+    volumes:
+      - ./configuration.yml:/config/configuration.yml
+      - ./secrets:/authelia_secrets
+      - ./data:/authelia_data
+    environment:
+      - AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE=/authelia_secrets/ldap_password
+      - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE=/authelia_secrets/jwt_secret
+      - AUTHELIA_SESSION_SECRET_FILE=/authelia_secrets/session_secret
+      - AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE=/authelia_secrets/encryption_key
+      - AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE=/authelia_secrets/smtp_password
+    networks:
+      - systemd-caddy_authelia
+      - systemd-caddy_lldap
+      - systemd-authelia_redis
+networks:
+  systemd-caddy_authelia:
+    external: true
+  systemd-caddy_lldap:
+    external: true
+  systemd-authelia_redis:
+    external: true

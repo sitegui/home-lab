@@ -1,0 +1,16 @@
+[Unit]
+Description=LLDAP
+Requires=podman.socket
+After=podman.socket
+Requires=caddy_lldap-network.service
+After=caddy_lldap-network.service
+
+[Service]
+WorkingDirectory=%h/bare/lldap
+ExecStart=/usr/bin/podman-compose up
+ExecStop=/usr/bin/podman-compose down
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

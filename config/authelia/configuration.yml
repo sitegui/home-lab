@@ -1,0 +1,34 @@
+authentication_backend:
+  ldap:
+    address: "ldap://lldap:3890"
+    implementation: "lldap"
+    base_dn: "dc=sitegui,dc=dev"
+    user: "uid=authelia,ou=people,dc=sitegui,dc=dev"
+totp:
+  issuer: "sitegui.dev"
+access_control:
+  default_policy: "two_factor"
+session:
+  inactivity: '1w'
+  expiration: '3M'
+  remember_me: -1
+  cookies:
+    - domain: 'sitegui.dev'
+      authelia_url: 'https://auth.sitegui.dev'
+  redis:
+    host: 'redis'
+storage:
+  local:
+    path: '/authelia_data/db.sqlite3'
+notifier:
+  smtp:
+    address: "submissions://smtp.fastmail.com:465"
+    username: "sitegui@fastmail.com"
+    sender: "homelab@sitegui.dev"
+log:
+  level: "info"
+server:
+  endpoints:
+    authz:
+      forward-auth:
+        implementation: "ForwardAuth"
