@@ -9,6 +9,7 @@ Restart = always
 RestartSec = 10
 
 [Container]
+ContainerName = authelia
 Image = docker.io/authelia/authelia:4
 UserNS = keep-id
 Volume = %h/home-lab/config/authelia/configuration.yml:/config/configuration.yml

@@ -5,6 +5,7 @@ Restart = always
 RestartSec = 10
 
 [Container]
+ContainerName = lldap
 Image = docker.io/lldap/lldap:stable-debian-rootless
 UserNS = keep-id
 Volume = %h/bare/lldap/data:/data
