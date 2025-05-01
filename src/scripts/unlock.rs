@@ -1,10 +1,14 @@
 use crate::child::Child;
+use crate::home::home;
 use crate::mount::mount_source;
 use anyhow::ensure;
 use std::io::{Write, stdin, stdout};
 
 pub fn unlock() -> anyhow::Result<()> {
-    if mount_source("protected").is_ok() {
+    let home = home()?;
+    let protected_dir = home.join("protected");
+
+    if mount_source(&protected_dir).is_ok() {
         tracing::info!("Protected disk is already mounted: nothing to do");
         return Ok(());
     }
@@ -19,7 +23,7 @@ pub fn unlock() -> anyhow::Result<()> {
     ensure!(!password.is_empty());
 
     tracing::info!("Unlocking...");
-    Child::new("sudo", &["./bare/mount-protected.sh"])
+    Child::new("sudo", &[home.join("home-lab/config/mount-protected.sh")])
         .stdin(password.to_string())
         .run()?;
 

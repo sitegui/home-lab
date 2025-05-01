@@ -3,8 +3,8 @@ use crate::home::home;
 use crate::list_files::list_files;
 use anyhow::Context;
 use itertools::Itertools;
+use std::fs;
 use std::path::{Path, PathBuf};
-use std::{env, fs};
 
 pub fn install_user_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
     let mut files = vec![];

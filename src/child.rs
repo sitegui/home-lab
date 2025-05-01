@@ -20,6 +20,7 @@ pub struct Child<'a> {
 pub struct ChildOutput {
     status: ExitStatus,
     stdout: Option<Vec<u8>>,
+    #[allow(dead_code)]
     stderr: Option<Vec<u8>>,
 }
 
@@ -45,6 +46,7 @@ impl<'a> Child<'a> {
         self
     }
 
+    #[allow(dead_code)]
     pub fn capture_stderr(mut self) -> Self {
         self.capture_stderr = true;
         self
@@ -130,16 +132,19 @@ impl ChildOutput {
         )?)
     }
 
+    #[allow(dead_code)]
     pub fn stdout_bytes(&self) -> anyhow::Result<&[u8]> {
         self.stdout.as_deref().context("did not capture stdout")
     }
 
+    #[allow(dead_code)]
     pub fn stderr(&self) -> anyhow::Result<String> {
         Ok(String::from_utf8(
             self.stderr.clone().context("missing stderr")?,
         )?)
     }
 
+    #[allow(dead_code)]
     pub fn stderr_bytes(&self) -> anyhow::Result<&[u8]> {
         self.stderr.as_deref().context("did not capture stderr")
     }
