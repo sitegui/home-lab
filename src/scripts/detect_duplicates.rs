@@ -1,4 +1,4 @@
-use crate::list_files;
+use crate::list_files::list_files;
 use sha1::digest::Output;
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
@@ -7,8 +7,7 @@ use std::io;
 use std::path::Path;
 
 pub fn detect_duplicates(path: &Path) -> anyhow::Result<()> {
-    let mut files = Vec::new();
-    list_files::list_files(path, &mut files)?;
+    let files = list_files(path)?;
 
     let total_files = files.len();
     tracing::info!("Found {} files", total_files);

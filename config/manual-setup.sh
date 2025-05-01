@@ -58,58 +58,21 @@ function allow_sudo_without_password() {
   sudo chmod 744 "$SCRIPT"
 }
 
-allow_sudo_without_password "$HOME/bare/mount-protected.sh"
-allow_sudo_without_password "$HOME/bare/mount-backup-1.sh"
-allow_sudo_without_password "$HOME/bare/umount-backup-1.sh"
+allow_sudo_without_password "$HOME/home-lab/config/mount-protected.sh"
+allow_sudo_without_password "$HOME/home-lab/config/mount-backup-1.sh"
+allow_sudo_without_password "$HOME/home-lab/config/umount-backup-1.sh"
 )
 
 ###
 ### Write the encryption password on the encrypted disk itself
 ###
 (
-sudo "$HOME/bare/mount-protected.sh"
+sudo "$HOME/home-lab/config/mount-protected.sh"
 PASSWORD_FILE="$HOME/protected/backup-password.txt"
 nano "$PASSWORD_FILE" # enter password
 ENCRYPTION_KEY=$(cat "$PASSWORD_FILE")
 echo -n "$ENCRYPTION_KEY" > "$PASSWORD_FILE" # to remove trailing new line
 chmod 0600 "$PASSWORD_FILE"
-)
-
-###
-### Automatic backups
-###
-(
-SYSTEMD_USER="$HOME/.config/systemd/user"
-mkdir -p "$SYSTEMD_USER"
-
-tee "$SYSTEMD_USER/backup.service" << 'EOF'
-[Unit]
-Description=Backup
-
-[Service]
-ExecStart=%h/bare/home-lab backup
-Restart=on-failure
-RestartSec=300
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-tee "$SYSTEMD_USER/backup.timer" << 'EOF'
-[Unit]
-Description=Backup timer
-
-[Timer]
-OnCalendar=*-*-* 02:00:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-
-systemctl --user daemon-reload
-systemctl --user enable backup.timer
-systemctl --user start backup.timer
 )
 
 ###
@@ -172,50 +135,15 @@ loginctl enable-linger sitegui
 )
 
 ###
-### Caddy
-###
-(
-mkdir "$HOME/bare/caddy"
-cd "$HOME/bare/caddy"
-
-mkdir config
-mkdir data
-
-CONTAINERS_SYSTEMD="$HOME/.config/containers/systemd/"
-mkdir -p "$CONTAINERS_SYSTEMD"
-ln --force --symbolic "$(pwd)"/caddy.container "$CONTAINERS_SYSTEMD"
-ln --force --symbolic "$(pwd)"/caddy.network "$CONTAINERS_SYSTEMD"
-ln --force --symbolic "$(pwd)"/caddy_lldap.network "$CONTAINERS_SYSTEMD"
-ln --force --symbolic "$(pwd)"/caddy_authelia.network "$CONTAINERS_SYSTEMD"
-ln --force --symbolic "$(pwd)"/caddy_jellyfin.network "$CONTAINERS_SYSTEMD"
-
-SYSTEMD_USER="$HOME/.config/systemd/user/"
-mkdir -p "$SYSTEMD_USER"
-ln --force --symbolic "$(pwd)"/caddy.socket "$SYSTEMD_USER"
-
-systemctl --user daemon-reload
-systemctl --user restart caddy.service
-)
-
-###
 ### LLDAP
 ###
 (
 mkdir "$HOME/bare/lldap"
 cd "$HOME/bare/lldap"
 
-mkdir secrets
-mkdir data
-
 openssl rand -hex 16 > secrets/jwt_secret
 openssl rand -hex 16 > secrets/key_seed
 openssl rand -hex 16 > secrets/ldap_user_pass
-
-ln --force --symbolic "$(pwd)"/lldap.service "$HOME/.config/systemd/user/"
-
-systemctl --user daemon-reload
-systemctl --user enable lldap.service
-systemctl --user restart lldap.service
 )
 
 ###
@@ -235,37 +163,4 @@ openssl rand -hex 16 > secrets/ldap_password
 openssl rand -hex 16 > secrets/jwt_secret
 openssl rand -hex 16 > secrets/session_secret
 openssl rand -hex 16 > secrets/encryption_key
-
-CONTAINERS_SYSTEMD="$HOME/.config/containers/systemd/"
-ln --force --symbolic "$(pwd)"/authelia_redis.network "$CONTAINERS_SYSTEMD"
-
-ln --force --symbolic "$(pwd)"/authelia.service "$HOME/.config/systemd/user/"
-ln --force --symbolic "$(pwd)"/redis/authelia_redis.service "$HOME/.config/systemd/user/"
-
-systemctl --user daemon-reload
-systemctl --user enable authelia.service
-systemctl --user enable authelia_redis.service
-systemctl --user restart authelia.service
-systemctl --user restart authelia_redis.service
-)
-
-###
-### Protected services
-###
-# In using a custom systemd target, to let all services that depend on protected data to start once the system is
-# unlocked
-(
-ln --force --symbolic "$HOME/bare/protected.target" "$HOME/.config/systemd/user/"
-
-systemctl --user daemon-reload
-)
-
-###
-### Jellyfin
-###
-(
-cd "$HOME/protected/jellyfin"
-ln --force --symbolic "$(pwd)/jellyfin.service" "$HOME/.config/systemd/user/"
-
-systemctl --user daemon-reload
 )

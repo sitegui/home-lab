@@ -7,9 +7,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn install_user_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
-    let mut files = vec![];
     let path = path.as_deref().unwrap_or(Path::new("config"));
-    list_files(path, &mut files)?;
+    let files = list_files(path)?;
 
     let home = home()?;
     let containers_dir = home.clone().join(".config/containers/systemd");
@@ -53,16 +52,21 @@ pub fn install_user_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<
     }
 
     if !updated_units.is_empty() {
-        Child::new("systemctl", &["--user", "daemon-reload"]).run()?;
+        Child::new("systemctl")
+            .args(["--user", "daemon-reload"])
+            .run()?;
 
         for unit in updated_units {
             if let Some(enable_name) = unit.enable_name {
                 tracing::info!("Enabling {}", enable_name);
-                Child::new("systemctl", &["--user", "enable", &enable_name]).run()?;
+                Child::new("systemctl")
+                    .args(["--user", "enable", &enable_name])
+                    .run()?;
             }
             if let Some(restart_name) = unit.restart_name {
                 tracing::info!("Restarting {}", restart_name);
-                Child::new("systemctl", &["--user", "restart", &restart_name])
+                Child::new("systemctl")
+                    .args(["--user", "restart", &restart_name])
                     .ignore_status()
                     .run()?;
             }

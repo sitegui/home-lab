@@ -1,15 +1,15 @@
 use anyhow::{Context, bail};
 use itertools::Itertools;
-use std::ffi::OsStr;
+use std::ffi::OsString;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Command, ExitStatus, Stdio};
 use std::thread;
 use std::thread::JoinHandle;
 
 #[derive(Debug)]
-pub struct Child<'a> {
-    program: &'a str,
-    args: Vec<&'a OsStr>,
+pub struct Child {
+    program: OsString,
+    args: Vec<OsString>,
     stdin: Option<String>,
     capture_stdout: bool,
     capture_stderr: bool,
@@ -24,16 +24,30 @@ pub struct ChildOutput {
     stderr: Option<Vec<u8>>,
 }
 
-impl<'a> Child<'a> {
-    pub fn new(program: &'a str, args: &'a [impl AsRef<OsStr>]) -> Self {
+impl Child {
+    pub fn new(program: impl Into<OsString>) -> Self {
         Child {
-            program,
-            args: args.iter().map(|a| a.as_ref()).collect(),
+            program: program.into(),
+            args: Vec::new(),
             stdin: None,
             capture_stdout: false,
             capture_stderr: false,
             ignore_status: false,
         }
+    }
+
+    pub fn args<I, A>(mut self, args: I) -> Self
+    where
+        I: IntoIterator<Item = A>,
+        A: Into<OsString>,
+    {
+        self.args.extend(args.into_iter().map(|a| a.into()));
+        self
+    }
+
+    pub fn arg<A: Into<OsString>>(mut self, arg: A) -> Self {
+        self.args.push(arg.into());
+        self
     }
 
     pub fn stdin(mut self, stdin: String) -> Self {
@@ -60,7 +74,7 @@ impl<'a> Child<'a> {
     pub fn run(self) -> anyhow::Result<ChildOutput> {
         tracing::debug!(
             "Run `{} {}`",
-            self.program,
+            self.program.to_string_lossy(),
             self.args
                 .iter()
                 .map(|arg| arg.to_string_lossy())

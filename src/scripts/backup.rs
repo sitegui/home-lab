@@ -21,24 +21,22 @@ pub fn backup() -> anyhow::Result<()> {
         Ok(backup_mount) => backup_mount,
         Err(_) => {
             tracing::info!("Will try to mount backup-1");
-            Child::new("sudo", &[home.join("home-lab/config/mount-backup-1.sh")]).run()?;
+            Child::new("sudo")
+                .arg(home.join("home-lab/config/mount-backup-1.sh"))
+                .run()?;
             mount_source(&backup_dir).context("failed to mount backup-1")?
         }
     };
 
     tracing::info!("Backing up into {}", backup_mount);
-    Child::new(
-        "rsync",
-        &[
-            home.join("bare").as_os_str(),
-            home.join("protected").as_os_str(),
-            home.join("backup-1").as_os_str(),
-            "--archive".as_ref(),
-            "--delete".as_ref(),
-            "--verbose".as_ref(),
-        ],
-    )
-    .run()?;
+    Child::new("rsync")
+        .args([
+            home.join("bare"),
+            home.join("protected"),
+            home.join("backup-1"),
+        ])
+        .args(["--archive", "--delete", "--verbose"])
+        .run()?;
 
     let last_successful_backup = protected_dir.join("last-successful-backup.txt");
     fs::copy(
@@ -55,7 +53,9 @@ pub fn backup() -> anyhow::Result<()> {
     tracing::info!("Witness file has expected content, backup is up to date");
 
     tracing::info!("Will unmount backup");
-    Child::new("sudo", &[home.join("home-lab/config/umount-backup-1.sh")]).run()?;
+    Child::new("sudo")
+        .arg(home.join("home-lab/config/umount-backup-1.sh"))
+        .run()?;
 
     Ok(())
 }

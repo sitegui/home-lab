@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 pub fn detect_films(path: &Path, output: &Path) -> anyhow::Result<()> {
-    let mut film_paths = Vec::new();
-    list_files(path, &mut film_paths)?;
+    let film_paths = list_files(path)?;
 
     tracing::info!("Found {} files", film_paths.len());
 
@@ -46,10 +45,8 @@ struct VideoInformation {
 }
 
 fn video_information(path: PathBuf) -> anyhow::Result<VideoInformation> {
-    let path_str = path.to_str().context("invalid path")?;
-    let output = Child::new(
-        "ffprobe",
-        &[
+    let output = Child::new("ffprobe")
+        .args([
             "-hide_banner",
             "-v",
             "error",
@@ -57,12 +54,11 @@ fn video_information(path: PathBuf) -> anyhow::Result<VideoInformation> {
             "json",
             "-show_entries",
             "stream=width,height,avg_frame_rate,codec_type:format=duration,size",
-            path_str,
-        ],
-    )
-    .capture_stdout()
-    .run()
-    .context("failed to execute ffprobe")?;
+        ])
+        .arg(&path)
+        .capture_stdout()
+        .run()
+        .context("failed to execute ffprobe")?;
 
     let stdout = output.stdout()?;
     parse_video_information(path, &stdout)

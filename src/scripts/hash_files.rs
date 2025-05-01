@@ -1,4 +1,4 @@
-use crate::list_files;
+use crate::list_files::list_files;
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -6,8 +6,7 @@ use std::path::Path;
 use std::{fs, io};
 
 pub fn hash_files(path: &Path, output: &Path) -> anyhow::Result<()> {
-    let mut files = Vec::new();
-    list_files::list_files(path, &mut files)?;
+    let files = list_files(path)?;
 
     let total_files = files.len();
     tracing::info!("Found {} files", total_files);

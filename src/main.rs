@@ -8,6 +8,7 @@ use crate::scripts::backup::backup;
 use crate::scripts::detect_duplicates::detect_duplicates;
 use crate::scripts::detect_films::detect_films;
 use crate::scripts::hash_files::hash_files;
+use crate::scripts::install_sudo_scripts::install_sudo_scripts;
 use crate::scripts::install_user_units::install_user_units;
 use crate::scripts::move_films::move_films;
 use crate::scripts::prepare_rename_files::prepare_rename_files;
@@ -43,6 +44,8 @@ enum Cli {
     MoveFilms {
         path: PathBuf,
     },
+    /// Copy all sudo scripts to ~/sudo-scripts and edit the sudoers file to enable running them
+    InstallSudoScripts,
     /// Copy all systemd unit files to the user folder, enable them and restart the impacted
     /// services.
     InstallUserUnits {
@@ -66,6 +69,7 @@ fn main() -> anyhow::Result<()> {
         Cli::RenameFiles { path, input } => rename_files(&path, &input)?,
         Cli::DetectFilms { path, output } => detect_films(&path, &output)?,
         Cli::MoveFilms { path } => move_films(&path)?,
+        Cli::InstallSudoScripts => install_sudo_scripts()?,
         Cli::InstallUserUnits { force, path } => install_user_units(force, path)?,
     }
 

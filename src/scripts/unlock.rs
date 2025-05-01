@@ -23,12 +23,15 @@ pub fn unlock() -> anyhow::Result<()> {
     ensure!(!password.is_empty());
 
     tracing::info!("Unlocking...");
-    Child::new("sudo", &[home.join("home-lab/config/mount-protected.sh")])
+    Child::new("sudo")
+        .arg(home.join("home-lab/config/mount-protected.sh"))
         .stdin(password.to_string())
         .run()?;
 
     tracing::info!("Starting protected services");
-    Child::new("systemctl", &["--user", "start", "protected.target"]).run()?;
+    Child::new("systemctl")
+        .args(["--user", "start", "protected.target"])
+        .run()?;
 
     Ok(())
 }
