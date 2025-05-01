@@ -9,6 +9,12 @@ pub fn install_user_units() -> anyhow::Result<()> {
     let mut files = vec![];
     list_files(Path::new("config/caddy"), &mut files)?;
 
+    let home = env::var_os("HOME").context("missing HOME env var")?;
+    let containers_dir = PathBuf::from(&home).join(".config/containers/systemd");
+    let user_dir = PathBuf::from(home).join(".config/systemd/user");
+    fs::create_dir_all(&containers_dir)?;
+    fs::create_dir_all(&user_dir)?;
+
     let units: Vec<_> = files
         .into_iter()
         .filter(|file| {
@@ -22,7 +28,7 @@ pub fn install_user_units() -> anyhow::Result<()> {
                 || extension == "container"
                 || extension == "socket"
         })
-        .map(UnitFile::new)
+        .map(|file| UnitFile::new(&containers_dir, &user_dir, file))
         .try_collect()?;
 
     tracing::info!("Detected {} units", units.len());
@@ -65,20 +71,17 @@ struct UnitFile {
 }
 
 impl UnitFile {
-    fn new(source_path: PathBuf) -> anyhow::Result<Self> {
+    fn new(containers_dir: &Path, user_dir: &Path, source_path: PathBuf) -> anyhow::Result<Self> {
         let extension = source_path.extension().context("missing extension")?;
         let name = source_path
             .file_name()
             .context("missing file name")?
             .to_str()
             .context("invalid file name")?;
-        let home = env::var_os("HOME").context("missing HOME env var")?;
         let target_path = if extension == "network" || extension == "container" {
-            PathBuf::from(home)
-                .join(".config/containers/systemd")
-                .join(name)
+            containers_dir.join(name)
         } else {
-            PathBuf::from(home).join(".config/systemd/user").join(name)
+            user_dir.join(name)
         };
 
         let contents = fs::read_to_string(&source_path)?;

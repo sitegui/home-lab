@@ -8,6 +8,10 @@ if true; then
     exit 0
 fi
 
+# Install Rust
+sudo apt-get install -y build-essential
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
 ###
 ### Base folders
 ###
