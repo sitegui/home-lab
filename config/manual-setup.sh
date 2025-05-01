@@ -41,29 +41,6 @@ sudo cryptsetup close temp
 )
 
 ###
-### Scripts to mount and unmount the protected disks
-###
-# In order to do these operations, the scripts need super user access. In order to reduce the surface of attack, they:
-# - avoid all uses of complex bash features
-# - are owned by root
-# - can be executed by the user as sudo without entering password
-(
-function allow_sudo_without_password() {
-  SCRIPT="$1"
-
-  echo "sitegui ALL=(ALL) NOPASSWD: $SCRIPT" | sudo tee --append /etc/sudoers.d/sitegui
-
-  # Protect the file so that only root can modify it
-  sudo chown root:root "$SCRIPT"
-  sudo chmod 744 "$SCRIPT"
-}
-
-allow_sudo_without_password "$HOME/home-lab/config/mount-protected.sh"
-allow_sudo_without_password "$HOME/home-lab/config/mount-backup-1.sh"
-allow_sudo_without_password "$HOME/home-lab/config/umount-backup-1.sh"
-)
-
-###
 ### Write the encryption password on the encrypted disk itself
 ###
 (

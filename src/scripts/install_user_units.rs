@@ -28,6 +28,7 @@ pub fn install_user_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<
                 || extension == "network"
                 || extension == "container"
                 || extension == "socket"
+                || extension == "timer"
         })
         .map(|file| UnitFile::new(&containers_dir, &user_dir, file))
         .try_collect()?;
@@ -98,7 +99,8 @@ impl UnitFile {
             user_dir.join(name)
         };
 
-        let enable_name = if extension == "service" || extension == "socket" {
+        let enable_name = if extension == "service" || extension == "socket" || extension == "timer"
+        {
             Some(name.to_string())
         } else {
             None
