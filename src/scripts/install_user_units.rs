@@ -60,7 +60,9 @@ pub fn install_user_units(force: bool) -> anyhow::Result<()> {
             }
             if let Some(restart_name) = unit.restart_name {
                 tracing::info!("Restarting {}", restart_name);
-                Child::new("systemctl", &["--user", "restart", &restart_name]).run()?;
+                Child::new("systemctl", &["--user", "restart", &restart_name])
+                    .ignore_status()
+                    .run()?;
             }
         }
     }
