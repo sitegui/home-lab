@@ -55,10 +55,12 @@ pub fn install_user_units(force: bool) -> anyhow::Result<()> {
 
         for unit in updated_units {
             if let Some(enable_name) = unit.enable_name {
-                tracing::info!("Restarting {}", enable_name);
-
+                tracing::info!("Enabling {}", enable_name);
                 Child::new("systemctl", &["--user", "enable", &enable_name]).run()?;
-                Child::new("systemctl", &["--user", "restart", &enable_name]).run()?;
+            }
+            if let Some(restart_name) = unit.restart_name {
+                tracing::info!("Restarting {}", restart_name);
+                Child::new("systemctl", &["--user", "restart", &restart_name]).run()?;
             }
         }
     }
@@ -70,6 +72,7 @@ pub fn install_user_units(force: bool) -> anyhow::Result<()> {
 struct UnitFile {
     target_path: PathBuf,
     enable_name: Option<String>,
+    restart_name: Option<String>,
     contents: String,
 }
 
@@ -89,6 +92,12 @@ impl UnitFile {
 
         let enable_name = if extension == "service" || extension == "socket" {
             Some(name.to_string())
+        } else {
+            None
+        };
+
+        let restart_name = if extension == "service" || extension == "socket" {
+            Some(name.to_string())
         } else if extension == "container" {
             let base_name = name
                 .strip_suffix(".container")
@@ -102,6 +111,7 @@ impl UnitFile {
 
         Ok(Self {
             enable_name,
+            restart_name,
             target_path,
             contents,
         })
