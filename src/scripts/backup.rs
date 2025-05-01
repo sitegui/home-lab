@@ -24,7 +24,14 @@ pub fn backup() -> anyhow::Result<()> {
     tracing::info!("Backing up into {}", backup_mount);
     Child::new(
         "rsync",
-        &["bare", "protected", "backup-1", "--archive", "--delete"],
+        &[
+            "bare",
+            "protected",
+            "backup-1",
+            "--archive",
+            "--delete",
+            "--verbose",
+        ],
     )
     .run()?;
 
