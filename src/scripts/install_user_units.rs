@@ -54,10 +54,12 @@ pub fn install_user_units(force: bool) -> anyhow::Result<()> {
         Child::new("systemctl", &["--user", "daemon-reload"]).run()?;
 
         for unit in updated_units {
-            tracing::info!("Restarting {}", unit.name);
+            if let Some(enable_name) = unit.enable_name {
+                tracing::info!("Restarting {}", enable_name);
 
-            Child::new("systemctl", &["--user", "enable", &unit.name]).run()?;
-            Child::new("systemctl", &["--user", "restart", &unit.name]).run()?;
+                Child::new("systemctl", &["--user", "enable", &enable_name]).run()?;
+                Child::new("systemctl", &["--user", "restart", &enable_name]).run()?;
+            }
         }
     }
 
@@ -66,8 +68,8 @@ pub fn install_user_units(force: bool) -> anyhow::Result<()> {
 
 #[derive(Debug)]
 struct UnitFile {
-    name: String,
     target_path: PathBuf,
+    enable_name: Option<String>,
     contents: String,
 }
 
@@ -85,10 +87,21 @@ impl UnitFile {
             user_dir.join(name)
         };
 
+        let enable_name = if extension == "service" || extension == "socket" {
+            Some(name.to_string())
+        } else if extension == "container" {
+            let base_name = name
+                .strip_suffix(".container")
+                .context("invalid container name")?;
+            Some(format!("{}.service", base_name))
+        } else {
+            None
+        };
+
         let contents = fs::read_to_string(&source_path)?;
 
         Ok(Self {
-            name: name.to_string(),
+            enable_name,
             target_path,
             contents,
         })
