@@ -1,0 +1,19 @@
+[Unit]
+ConditionPathIsMountPoint = %h/protected
+
+[Service]
+Restart = always
+RestartSec = 10
+
+[Container]
+ContainerName = jellyfin
+Image = docker.io/jellyfin/jellyfin:10.10
+UserNS = keep-id
+Volume = %h/bare/jellyfin/config:/config
+Volume = %h/bare/jellyfin/cache:/cache
+Volume = %h/bare/jellyfin/media:/media
+Environment = JELLYFIN_PublishedServerUrl=https://film.sitegui.dev
+Network = caddy-jellyfin.network
+
+[Install]
+WantedBy = protected.target
