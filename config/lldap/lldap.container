@@ -1,0 +1,20 @@
+[Unit]
+
+[Service]
+Restart = always
+RestartSec = 10
+
+[Container]
+Image = docker.io/lldap/lldap:stable-debian-rootless
+UserNS = keep-id
+Volume = %h/bare/lldap/data:/data
+Volume = %h/bare/lldap/secrets:/lldap_secrets
+Environment = LLDAP_JWT_SECRET_FILE=/lldap_secrets/jwt_secret
+Environment = LLDAP_KEY_SEED_FILE=/lldap_secrets/key_seed
+Environment = LLDAP_LDAP_BASE_DN=dc=sitegui,dc=dev
+Environment = LLDAP_LDAP_USER_DN=sitegui
+Environment = LLDAP_LDAP_USER_PASS_FILE=/lldap_secrets/ldap_user_pass
+Network = caddy-lldap.network
+
+[Install]
+WantedBy = default.target
