@@ -12,7 +12,7 @@ UserNS = keep-id
 Volume = %h/protected/jellyfin/config:/config
 Volume = %h/protected/jellyfin/cache:/cache
 Volume = %h/protected/jellyfin/media:/media
-Environment = JELLYFIN_PublishedServerUrl=https://film.sitegui.dev
+Environment = JELLYFIN_PublishedServerUrl=https://films.sitegui.dev
 Network = caddy-jellyfin.network
 
 [Install]
