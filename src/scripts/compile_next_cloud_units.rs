@@ -75,7 +75,7 @@ fn compile_service(
             .collect(),
     };
 
-    let userns = encoder
+    let user_ns = encoder
         .encode_public_opt(&service.user)?
         .map(|user| format!("keep-id:uid={}", user));
 
@@ -125,7 +125,7 @@ fn compile_service(
     let container = Container {
         container_name: service_name.to_string(),
         image: encoder.encode_public(&service.image)?,
-        userns,
+        user_ns,
         run_init: service.init,
         health_start_period: encoder.encode_public(&service.healthcheck.start_period)?,
         health_cmd: encoder.encode_public(&service.healthcheck.test)?,

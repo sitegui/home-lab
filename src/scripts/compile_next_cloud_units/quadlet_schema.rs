@@ -23,7 +23,7 @@ pub struct Service {
 pub struct Container {
     pub container_name: String,
     pub image: String,
-    pub userns: Option<String>,
+    pub user_ns: Option<String>,
     pub run_init: bool,
     pub health_start_period: String,
     pub health_cmd: String,
@@ -86,8 +86,8 @@ impl Display for Container {
         writeln!(f, "[Container]")?;
         writeln!(f, "ContainerName = {}", self.container_name)?;
         writeln!(f, "Image = {}", self.image)?;
-        if let Some(userns) = &self.userns {
-            writeln!(f, "Userns = {}", userns)?;
+        if let Some(user_ns) = &self.user_ns {
+            writeln!(f, "UserNS = {}", user_ns)?;
         }
         writeln!(f, "RunInit = {}", self.run_init)?;
         writeln!(f, "HealthStartPeriod = {}", self.health_start_period)?;
