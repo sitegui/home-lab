@@ -75,9 +75,12 @@ fn compile_service(
             .collect(),
     };
 
-    let user_ns = encoder
-        .encode_public_opt(&service.user)?
-        .map(|user| format!("keep-id:uid={}", user));
+    let user_ns = match &service.user {
+        Some(user) => {
+            format!("keep-id:uid={}", encoder.encode_public(user)?)
+        }
+        None => "keep-id".to_string(),
+    };
 
     let tmpfs = encoder.encode_public_vec(&service.tmpfs)?;
     let add_capability = encoder.encode_public_vec(&service.cap_add)?;
@@ -96,7 +99,7 @@ fn compile_service(
         if volume_item.volume.is_empty() {
             continue;
         }
-        
+
         let volume_path = if volume_item.volume.contains('/') {
             volume_item.volume
         } else {
