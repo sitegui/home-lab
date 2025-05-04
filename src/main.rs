@@ -57,7 +57,12 @@ enum Cli {
         path: Option<PathBuf>,
     },
     /// Convert the official docker compose file into podman systemd unit files
-    CompileNextCloudUnits,
+    CompileNextCloudUnits {
+        #[clap(long)]
+        input_secrets: PathBuf,
+        #[clap(long)]
+        output_secrets: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -74,7 +79,10 @@ fn main() -> anyhow::Result<()> {
         Cli::MoveFilms { path } => move_films(&path)?,
         Cli::InstallSudoScripts => install_sudo_scripts()?,
         Cli::InstallUserUnits { force, path } => install_user_units(force, path)?,
-        Cli::CompileNextCloudUnits => compile_next_cloud_units()?,
+        Cli::CompileNextCloudUnits {
+            input_secrets,
+            output_secrets,
+        } => compile_next_cloud_units(input_secrets, output_secrets)?,
     }
 
     tracing::info!("Done");

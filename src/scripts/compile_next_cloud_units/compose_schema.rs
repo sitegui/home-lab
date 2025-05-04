@@ -1,10 +1,8 @@
 use anyhow::ensure;
-use regex::{Captures, Regex};
 use serde::Deserialize;
 use serde::de::IgnoredAny;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::str::FromStr;
-use std::sync::LazyLock;
 
 /// Note: this is not meant to be a complete schema, just the parts we need.
 #[derive(Debug, Deserialize)]
@@ -22,7 +20,7 @@ pub struct ComposeService {
     pub init: bool,
     pub healthcheck: Healthcheck,
     #[serde(default)]
-    pub environment: Vec<DynamicString>,
+    pub environment: Vec<Environment>,
     #[serde(default)]
     pub volumes: Vec<DynamicString>,
     #[serde(default)]
@@ -50,7 +48,7 @@ pub struct Healthcheck {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct DynamicString(String);
+pub struct DynamicString(pub String);
 
 #[derive(Debug)]
 pub struct Volume {
@@ -59,10 +57,11 @@ pub struct Volume {
     pub access_mode: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+#[serde(from = "String")]
 pub struct Environment {
-    pub name: String,
-    pub value: String,
+    pub name: DynamicString,
+    pub value: DynamicString,
 }
 
 impl FromStr for Volume {
@@ -80,68 +79,17 @@ impl FromStr for Volume {
     }
 }
 
-impl FromStr for Environment {
-    type Err = anyhow::Error;
-
-    fn from_str(text: &str) -> Result<Self, Self::Err> {
+impl From<String> for Environment {
+    fn from(text: String) -> Self {
         match text.split_once('=') {
-            None => Ok(Environment {
-                name: text.to_string(),
-                value: text.to_string(),
-            }),
-            Some((name, value)) => Ok(Environment {
-                name: name.to_string(),
-                value: value.to_string(),
-            }),
-        }
-    }
-}
-
-static INTERPOLATION_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"\$([_a-zA-Z][_a-zA-Z0-9]*)|\$\{([^}])}"#).unwrap());
-
-impl DynamicString {
-    pub fn vars(&self) -> BTreeSet<String> {
-        let mut vars = BTreeSet::new();
-
-        for captures in INTERPOLATION_REGEX.captures_iter(&self.0) {
-            let name = captures
-                .get(1)
-                .or_else(|| captures.get(2))
-                .expect("the regex has two capturing groups")
-                .as_str();
-            vars.insert(name.to_string());
-        }
-
-        vars
-    }
-
-    pub fn replaced(&self, vars: &BTreeMap<String, String>) -> anyhow::Result<String> {
-        let mut error = None;
-
-        let replaced = INTERPOLATION_REGEX.replace_all(&self.0, |captures: &Captures| -> &str {
-            let name = captures
-                .get(1)
-                .or_else(|| captures.get(2))
-                .expect("the regex has two capturing groups")
-                .as_str();
-
-            match vars.get(name) {
-                Some(value) => value,
-                None => {
-                    error = Some(anyhow::anyhow!(
-                        "variable {} not found when interpolating: {}",
-                        name,
-                        self.0
-                    ));
-                    ""
-                }
-            }
-        });
-
-        match error {
-            Some(error) => Err(error),
-            None => Ok(replaced.to_string()),
+            None => Environment {
+                value: DynamicString(format!("${{{}}}", text)),
+                name: DynamicString(text),
+            },
+            Some((name, value)) => Environment {
+                name: DynamicString(name.to_string()),
+                value: DynamicString(value.to_string()),
+            },
         }
     }
 }
