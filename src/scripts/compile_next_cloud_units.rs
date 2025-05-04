@@ -25,6 +25,9 @@ pub fn compile_next_cloud_units(
     let volumes_dir = PathFromHome::new(&volumes_dir)?;
 
     let nextcloud_dir = Path::new("config/nextcloud");
+    let units_dir = nextcloud_dir.join("units");
+    fs::create_dir_all(&units_dir)?;
+
     let encoder = EnvironmentEncoder::new(&input_secrets, &nextcloud_dir.join("vars.conf"))?;
 
     let compose_source = fs::read_to_string(nextcloud_dir.join("vendor/latest.yml"))?;
@@ -49,7 +52,7 @@ pub fn compile_next_cloud_units(
 
         let contents = quadlet.to_string();
         fs::write(
-            nextcloud_dir.join(format!("units/{}.container", service_name)),
+            units_dir.join(format!("{}.container", service_name)),
             contents,
         )?;
     }

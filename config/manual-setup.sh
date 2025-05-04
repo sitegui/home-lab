@@ -164,4 +164,10 @@ WHITEBOARD_SECRET=$(openssl rand -hex 16)
 EOF
 
 chmod 600 secrets.conf
+
+cd "$HOME/home-lab"
+cargo run -- compile-next-cloud-units \
+  --input-secrets "$HOME/protected/next-cloud/secrets.conf" \
+  --output-secrets-dir "$HOME/protected/next-cloud/secrets" \
+  --volumes-dir "$HOME/protected/next-cloud/volumes"
 )
