@@ -9,7 +9,8 @@ totp:
 access_control:
   default_policy: "two_factor"
   rules:
-    - network: "2a01:e0a:82c:b1f0::/64"
+    - domain: "*.sitegui.dev"
+      network: "2a01:e0a:82c:b1f0::/64"
       policy: "bypass"
 session:
   inactivity: "1w"
