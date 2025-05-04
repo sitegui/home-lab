@@ -5,7 +5,7 @@ mod mount;
 mod scripts;
 
 use crate::scripts::backup::backup;
-use crate::scripts::compile_next_cloud_units::compile_next_cloud_units;
+use crate::scripts::compile_nextcloud_units::compile_nextcloud_units;
 use crate::scripts::detect_duplicates::detect_duplicates;
 use crate::scripts::detect_films::detect_films;
 use crate::scripts::hash_files::hash_files;
@@ -57,7 +57,7 @@ enum Cli {
         path: Option<PathBuf>,
     },
     /// Convert the official docker compose file into podman systemd unit files
-    CompileNextCloudUnits {
+    CompileNextcloudUnits {
         #[clap(long)]
         input_secrets: PathBuf,
         #[clap(long)]
@@ -81,11 +81,11 @@ fn main() -> anyhow::Result<()> {
         Cli::MoveFilms { path } => move_films(&path)?,
         Cli::InstallSudoScripts => install_sudo_scripts()?,
         Cli::InstallUserUnits { force, path } => install_user_units(force, path)?,
-        Cli::CompileNextCloudUnits {
+        Cli::CompileNextcloudUnits {
             input_secrets,
             output_secrets_dir,
             volumes_dir,
-        } => compile_next_cloud_units(input_secrets, output_secrets_dir, volumes_dir)?,
+        } => compile_nextcloud_units(input_secrets, output_secrets_dir, volumes_dir)?,
     }
 
     tracing::info!("Done");

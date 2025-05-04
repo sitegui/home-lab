@@ -152,8 +152,8 @@ openssl rand -hex 16 > secrets/encryption_key
 ### Next cloud
 ###
 (
-mkdir "$HOME/protected/next-cloud"
-cd "$HOME/protected/next-cloud"
+mkdir "$HOME/protected/nextcloud"
+cd "$HOME/protected/nextcloud"
 
 tee secrets.conf << EOF
 DATABASE_PASSWORD=$(openssl rand -hex 16)
@@ -173,7 +173,7 @@ chmod 600 secrets.conf
 
 cd "$HOME/home-lab"
 cargo run -- compile-next-cloud-units \
-  --input-secrets "$HOME/protected/next-cloud/secrets.conf" \
-  --output-secrets-dir "$HOME/protected/next-cloud/secrets" \
-  --volumes-dir "$HOME/protected/next-cloud/volumes"
+  --input-secrets "$HOME/protected/nextcloud/secrets.conf" \
+  --output-secrets-dir "$HOME/protected/nextcloud/secrets" \
+  --volumes-dir "$HOME/protected/nextcloud/volumes"
 )

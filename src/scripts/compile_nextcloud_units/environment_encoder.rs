@@ -1,4 +1,4 @@
-use crate::scripts::compile_next_cloud_units::compose_schema::{DynamicString, Environment};
+use crate::scripts::compile_nextcloud_units::compose_schema::{DynamicString, Environment};
 use anyhow::{Context, bail};
 use itertools::Itertools;
 use regex::{Captures, Regex};

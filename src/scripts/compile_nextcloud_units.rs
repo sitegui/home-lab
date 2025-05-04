@@ -4,19 +4,19 @@ mod path_from_home;
 mod quadlet_schema;
 
 use crate::child::Child;
-use crate::scripts::compile_next_cloud_units::compose_schema::{Compose, ComposeService, Volume};
-use crate::scripts::compile_next_cloud_units::environment_encoder::{
+use crate::scripts::compile_nextcloud_units::compose_schema::{Compose, ComposeService, Volume};
+use crate::scripts::compile_nextcloud_units::environment_encoder::{
     EnvironmentEncoder, ServiceEnvironmentEncoder,
 };
-use crate::scripts::compile_next_cloud_units::path_from_home::PathFromHome;
-use crate::scripts::compile_next_cloud_units::quadlet_schema::{
+use crate::scripts::compile_nextcloud_units::path_from_home::PathFromHome;
+use crate::scripts::compile_nextcloud_units::quadlet_schema::{
     Container, Install, Quadlet, Service, Unit,
 };
 use anyhow::Context;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub fn compile_next_cloud_units(
+pub fn compile_nextcloud_units(
     input_secrets: PathBuf,
     output_secrets_dir: PathBuf,
     volumes_dir: PathBuf,
