@@ -8,7 +8,11 @@ use std::path::{Path, PathBuf};
 
 pub fn install_user_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
     let path = path.as_deref().unwrap_or(Path::new("config"));
-    let files = list_files(path)?;
+    let files = if path.metadata()?.is_file() {
+        vec![path.to_owned()]
+    } else {
+        list_files(path)?
+    };
 
     let home = home()?;
     let containers_dir = home.clone().join(".config/containers/systemd");
