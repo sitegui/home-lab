@@ -34,12 +34,20 @@
     }
 }
 
-film.sitegui.dev {
+films.sitegui.dev {
     import external_sockets
     import logging
     import auth
 
     reverse_proxy jellyfin:8096
+}
+
+docs.sitegui.dev {
+    import external_sockets
+    import logging
+    import auth
+
+    reverse_proxy nextcloud-aio-nextcloud:11000
 }
 
 auth.sitegui.dev {
