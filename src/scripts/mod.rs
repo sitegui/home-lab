@@ -1,4 +1,5 @@
 pub mod backup;
+pub mod compile_next_cloud_units;
 pub mod detect_duplicates;
 pub mod detect_films;
 pub mod hash_files;
