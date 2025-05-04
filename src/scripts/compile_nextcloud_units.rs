@@ -93,6 +93,10 @@ fn compile_service(
     let mut volume = vec![];
     for volume_item in &service.volumes {
         let volume_item: Volume = encoder.encode_public(volume_item)?.parse()?;
+        if volume_item.volume.is_empty() {
+            continue;
+        }
+        
         let volume_path = if volume_item.volume.contains('/') {
             volume_item.volume
         } else {
