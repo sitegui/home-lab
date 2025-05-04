@@ -141,3 +141,27 @@ openssl rand -hex 16 > secrets/jwt_secret
 openssl rand -hex 16 > secrets/session_secret
 openssl rand -hex 16 > secrets/encryption_key
 )
+
+###
+### Next cloud
+###
+(
+mkdir "$HOME/protected/next-cloud"
+cd "$HOME/protected/next-cloud"
+
+tee secrets.conf << EOF
+DATABASE_PASSWORD=$(openssl rand -hex 16)
+FULLTEXTSEARCH_PASSWORD=$(openssl rand -hex 16)
+IMAGINARY_SECRET=$(openssl rand -hex 16)
+NEXTCLOUD_PASSWORD=$(openssl rand -hex 16)
+ONLYOFFICE_SECRET=$(openssl rand -hex 16)
+RECORDING_SECRET=$(openssl rand -hex 16)
+REDIS_PASSWORD=$(openssl rand -hex 16)
+SIGNALING_SECRET=$(openssl rand -hex 16)
+TALK_INTERNAL_SECRET=$(openssl rand -hex 16)
+TURN_SECRET=$(openssl rand -hex 16)
+WHITEBOARD_SECRET=$(openssl rand -hex 16)
+EOF
+
+chmod 600 secrets.conf
+)

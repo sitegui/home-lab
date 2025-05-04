@@ -3,6 +3,7 @@ mod environment_encoder;
 mod path_from_home;
 mod quadlet_schema;
 
+use crate::child::Child;
 use crate::scripts::compile_next_cloud_units::compose_schema::{Compose, ComposeService, Volume};
 use crate::scripts::compile_next_cloud_units::environment_encoder::{
     EnvironmentEncoder, ServiceEnvironmentEncoder,
@@ -103,6 +104,10 @@ fn compile_service(
 
     let environment_file = if let Some(contents) = encoder.secret_env_contents() {
         fs::write(service_secrets_path, contents)?;
+        Child::new("chmod")
+            .arg("600")
+            .arg(service_secrets_path.as_ref())
+            .run()?;
         Some(service_secrets_path.to_systemd_string()?)
     } else {
         None
