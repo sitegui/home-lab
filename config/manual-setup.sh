@@ -107,6 +107,12 @@ net.ipv4.ip_unprivileged_port_start=80
 EOF
 sudo sudo sysctl --system
 
+# Allow overcommit
+sudo tee /etc/sysctl.d/sitegui-redis.conf << 'EOF'
+vm.overcommit_memory = 1
+EOF
+sudo sudo sysctl --system
+
 # Allow user services to run even after login shell session is closed
 loginctl enable-linger sitegui
 )

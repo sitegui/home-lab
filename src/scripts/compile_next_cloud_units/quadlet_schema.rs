@@ -118,7 +118,9 @@ impl Display for Container {
             writeln!(f, "Exec = {}", exec)?;
         }
         if let Some(stop_timeout) = &self.stop_timeout {
-            writeln!(f, "StopTimeout = {}", stop_timeout)?;
+            // Note: this is a hack around the fact that the version I'm using does not support `StopTimeout` yet.
+            // See https://github.com/containers/podman/issues/21134
+            writeln!(f, "PodmanArgs=--stop-timeout {}", stop_timeout)?;
         }
         if let Some(shm_size) = &self.shm_size {
             writeln!(f, "ShmSize = {}", shm_size)?;
