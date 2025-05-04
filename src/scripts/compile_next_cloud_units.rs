@@ -96,7 +96,9 @@ fn compile_service(
         let volume_path = if volume_item.volume.contains('/') {
             volume_item.volume
         } else {
-            volumes_dir.join(volume_item.volume).to_systemd_string()?
+            let volume_dir = volumes_dir.join(volume_item.volume);
+            fs::create_dir_all(&volume_dir)?;
+            volume_dir.to_systemd_string()?
         };
 
         volume.push(format!(
