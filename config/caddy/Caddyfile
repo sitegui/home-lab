@@ -47,7 +47,7 @@ docs.sitegui.dev {
     import logging
     import auth
 
-    reverse_proxy nextcloud-aio-nextcloud:11000
+    reverse_proxy nextcloud-aio-apache:11000
 }
 
 auth.sitegui.dev {
