@@ -124,6 +124,18 @@ fn compile_service(
         network.push("caddy-nextcloud.network".to_string());
     }
 
+    let stop_timeout_s = match encoder.encode_public_opt(&service.stop_grace_period)? {
+        None => None,
+        Some(stop_grace_period) => Some(
+            stop_grace_period
+                .strip_suffix("s")
+                .context("failed to parse stop_grace_period as seconds")?
+                .trim()
+                .parse()
+                .context("failed to parse stop_grace_period as seconds")?,
+        ),
+    };
+
     let container = Container {
         container_name: service_name.to_string(),
         image: encoder.encode_public(&service.image)?,
@@ -142,7 +154,7 @@ fn compile_service(
         add_capability,
         drop_capability,
         exec: encoder.encode_public_opt(&service.command)?,
-        stop_timeout: encoder.encode_public_opt(&service.stop_grace_period)?,
+        stop_timeout_s,
         shm_size: encoder.encode_public_opt(&service.shm_size)?,
         network,
     };

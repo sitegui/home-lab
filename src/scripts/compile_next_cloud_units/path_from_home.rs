@@ -12,7 +12,7 @@ pub struct PathFromHome {
 
 impl PathFromHome {
     pub fn new(path: &Path) -> anyhow::Result<Self> {
-        fs::create_dir_all(&path)?;
+        fs::create_dir_all(path)?;
         let absolute = path
             .canonicalize()
             .with_context(|| format!("failed to calculate absolute path for {}", path.display()))?;
