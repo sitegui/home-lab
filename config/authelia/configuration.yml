@@ -8,18 +8,21 @@ totp:
   issuer: "sitegui.dev"
 access_control:
   default_policy: "two_factor"
+  rules:
+    - network: "2a01:e0a:82c:b1f0::/64"
+      policy: "bypass"
 session:
-  inactivity: '1w'
-  expiration: '3M'
+  inactivity: "1w"
+  expiration: "3M"
   remember_me: -1
   cookies:
-    - domain: 'sitegui.dev'
-      authelia_url: 'https://auth.sitegui.dev'
+    - domain: "sitegui.dev"
+      authelia_url: "https://auth.sitegui.dev"
   redis:
-    host: 'redis'
+    host: "redis"
 storage:
   local:
-    path: '/authelia_data/db.sqlite3'
+    path: "/authelia_data/db.sqlite3"
 notifier:
   smtp:
     address: "submissions://smtp.fastmail.com:465"
