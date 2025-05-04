@@ -126,11 +126,14 @@ impl<'a> ServiceEnvironmentEncoder<'a> {
         }
     }
 
-    pub fn secret_env_contents(&self) -> String {
-        self.secrets
+    pub fn secret_env_contents(&self) -> Option<String> {
+        let contents = self
+            .secrets
             .iter()
             .format_with("\n", |(k, v), f| f(&format_args!("{}={}", k, v)))
-            .to_string()
+            .to_string();
+
+        (!contents.is_empty()).then_some(contents)
     }
 }
 

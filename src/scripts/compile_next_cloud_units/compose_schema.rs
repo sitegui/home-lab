@@ -20,6 +20,8 @@ pub struct ComposeService {
     pub init: bool,
     pub healthcheck: Healthcheck,
     #[serde(default)]
+    pub ports: Vec<IgnoredAny>,
+    #[serde(default)]
     pub environment: Vec<Environment>,
     #[serde(default)]
     pub volumes: Vec<DynamicString>,

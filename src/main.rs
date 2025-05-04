@@ -61,7 +61,9 @@ enum Cli {
         #[clap(long)]
         input_secrets: PathBuf,
         #[clap(long)]
-        output_secrets: PathBuf,
+        output_secrets_dir: PathBuf,
+        #[clap(long)]
+        volumes_dir: PathBuf,
     },
 }
 
@@ -81,8 +83,9 @@ fn main() -> anyhow::Result<()> {
         Cli::InstallUserUnits { force, path } => install_user_units(force, path)?,
         Cli::CompileNextCloudUnits {
             input_secrets,
-            output_secrets,
-        } => compile_next_cloud_units(input_secrets, output_secrets)?,
+            output_secrets_dir,
+            volumes_dir,
+        } => compile_next_cloud_units(input_secrets, output_secrets_dir, volumes_dir)?,
     }
 
     tracing::info!("Done");

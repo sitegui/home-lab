@@ -30,7 +30,7 @@ pub struct Container {
     pub health_interval: String,
     pub health_timeout: String,
     pub health_retries: String,
-    pub environment_file: String,
+    pub environment_file: Option<String>,
     pub environment: Vec<String>,
     pub volume: Vec<String>,
     pub read_only: bool,
@@ -40,6 +40,7 @@ pub struct Container {
     pub exec: Option<String>,
     pub stop_timeout: Option<String>,
     pub shm_size: Option<String>,
+    pub network: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -94,7 +95,9 @@ impl Display for Container {
         writeln!(f, "HealthInterval = {}", self.health_interval)?;
         writeln!(f, "HealthTimeout = {}", self.health_timeout)?;
         writeln!(f, "HealthRetries = {}", self.health_retries)?;
-        writeln!(f, "EnvironmentFile = {}", self.environment_file)?;
+        if let Some(environment_file) = &self.environment_file {
+            writeln!(f, "EnvironmentFile = {}", environment_file)?;
+        }
         for environment in &self.environment {
             writeln!(f, "Environment = {}", environment)?;
         }
@@ -119,6 +122,9 @@ impl Display for Container {
         }
         if let Some(shm_size) = &self.shm_size {
             writeln!(f, "ShmSize = {}", shm_size)?;
+        }
+        for network in &self.network {
+            writeln!(f, "Network = {}", network)?;
         }
 
         Ok(())

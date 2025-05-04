@@ -1,11 +1,13 @@
 mod compose_schema;
 mod environment_encoder;
+mod path_from_home;
 mod quadlet_schema;
 
 use crate::scripts::compile_next_cloud_units::compose_schema::{Compose, ComposeService, Volume};
 use crate::scripts::compile_next_cloud_units::environment_encoder::{
     EnvironmentEncoder, ServiceEnvironmentEncoder,
 };
+use crate::scripts::compile_next_cloud_units::path_from_home::PathFromHome;
 use crate::scripts::compile_next_cloud_units::quadlet_schema::{
     Container, Install, Quadlet, Service, Unit,
 };
@@ -15,12 +17,11 @@ use std::path::{Path, PathBuf};
 
 pub fn compile_next_cloud_units(
     input_secrets: PathBuf,
-    output_secrets: PathBuf,
+    output_secrets_dir: PathBuf,
+    volumes_dir: PathBuf,
 ) -> anyhow::Result<()> {
-    fs::create_dir_all(&output_secrets)?;
-    let output_secrets = output_secrets
-        .canonicalize()
-        .with_context(|| format!("failed to canonicalize {}", output_secrets.display()))?;
+    let output_secrets_dir = PathFromHome::new(&output_secrets_dir)?;
+    let volumes_dir = PathFromHome::new(&volumes_dir)?;
 
     let nextcloud_dir = Path::new("config/nextcloud");
     let encoder = EnvironmentEncoder::new(&input_secrets, &nextcloud_dir.join("vars.conf"))?;
@@ -29,14 +30,17 @@ pub fn compile_next_cloud_units(
     let compose: Compose = serde_yml::from_str(&compose_source)?;
 
     for (service_name, service) in compose.services {
-        let service_name = service_name.replace("-aio-", "-");
+        if !service.profiles.is_empty() {
+            continue;
+        }
 
         let mut service_encoder = ServiceEnvironmentEncoder::new(&encoder);
-        let service_secrets_path = output_secrets.join(format!("{}.env", service_name));
+        let service_secrets_path = output_secrets_dir.join(format!("{}.env", service_name));
 
         let quadlet = compile_service(
             &mut service_encoder,
             &service_secrets_path,
+            &volumes_dir,
             &service_name,
             &service,
         )
@@ -47,7 +51,6 @@ pub fn compile_next_cloud_units(
             nextcloud_dir.join(format!("units/{}.container", service_name)),
             contents,
         )?;
-        fs::write(service_secrets_path, service_encoder.secret_env_contents())?;
     }
 
     Ok(())
@@ -55,12 +58,17 @@ pub fn compile_next_cloud_units(
 
 fn compile_service(
     encoder: &mut ServiceEnvironmentEncoder,
-    service_secrets_path: &Path,
-    name: &str,
+    service_secrets_path: &PathFromHome,
+    volumes_dir: &PathFromHome,
+    service_name: &str,
     service: &ComposeService,
 ) -> anyhow::Result<Quadlet> {
     let unit = Unit {
-        after: service.depends_on.keys().cloned().collect(),
+        after: service
+            .depends_on
+            .keys()
+            .map(|another_service| format!("{}.service", another_service))
+            .collect(),
     };
 
     let userns = encoder
@@ -70,11 +78,6 @@ fn compile_service(
     let tmpfs = encoder.encode_public_vec(&service.tmpfs)?;
     let add_capability = encoder.encode_public_vec(&service.cap_add)?;
     let drop_capability = encoder.encode_public_vec(&service.cap_drop)?;
-
-    let environment_file = service_secrets_path
-        .to_str()
-        .context("failed to represent secrets path")?
-        .to_string();
 
     let mut environment = vec![];
     for environment_item in &service.environment {
@@ -86,14 +89,33 @@ fn compile_service(
     let mut volume = vec![];
     for volume_item in &service.volumes {
         let volume_item: Volume = encoder.encode_public(volume_item)?.parse()?;
+        let volume_path = if volume_item.volume.contains('/') {
+            volume_item.volume
+        } else {
+            volumes_dir.join(volume_item.volume).to_systemd_string()?
+        };
+
         volume.push(format!(
             "{}:{}:{}",
-            volume_item.volume, volume_item.container_path, volume_item.access_mode
+            volume_path, volume_item.container_path, volume_item.access_mode
         ));
     }
 
+    let environment_file = if let Some(contents) = encoder.secret_env_contents() {
+        fs::write(service_secrets_path, contents)?;
+        Some(service_secrets_path.to_systemd_string()?)
+    } else {
+        None
+    };
+
+    let mut network = vec!["nextcloud.network".to_string()];
+    if !service.ports.is_empty() {
+        // We assume that containers that expose ports will be exposed through the reverse proxy
+        network.push("caddy-nextcloud.network".to_string());
+    }
+
     let container = Container {
-        container_name: name.to_string(),
+        container_name: service_name.to_string(),
         image: encoder.encode_public(&service.image)?,
         userns,
         run_init: service.init,
@@ -112,6 +134,7 @@ fn compile_service(
         exec: encoder.encode_public_opt(&service.command)?,
         stop_timeout: encoder.encode_public_opt(&service.stop_grace_period)?,
         shm_size: encoder.encode_public_opt(&service.shm_size)?,
+        network,
     };
 
     Ok(Quadlet {
