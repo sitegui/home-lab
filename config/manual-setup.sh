@@ -175,5 +175,6 @@ cd "$HOME/home-lab"
 cargo run -- compile-next-cloud-units \
   --input-secrets "$HOME/protected/nextcloud/secrets.conf" \
   --output-secrets-dir "$HOME/protected/nextcloud/secrets" \
-  --volumes-dir "$HOME/protected/nextcloud/volumes"
+  --volumes-dir "$HOME/protected/nextcloud/volumes" \
+  --profiles collabora,imaginary,fulltextsearch
 )
