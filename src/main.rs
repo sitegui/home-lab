@@ -11,6 +11,7 @@ use crate::scripts::detect_films::detect_films;
 use crate::scripts::hash_files::hash_files;
 use crate::scripts::install_sudo_scripts::install_sudo_scripts;
 use crate::scripts::install_user_units::install_user_units;
+use crate::scripts::monitor_host::monitor_host;
 use crate::scripts::move_films::move_films;
 use crate::scripts::prepare_rename_files::prepare_rename_files;
 use crate::scripts::rename_files::rename_files;
@@ -65,6 +66,14 @@ enum Cli {
         #[clap(long)]
         volumes_dir: PathBuf,
     },
+    MonitorHost {
+        /// The hostname or IP
+        host: String,
+        /// The path for a .jsonl file with the logs
+        output: PathBuf,
+        #[clap(long, default_value_t = 10)]
+        interval_seconds: u64,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -86,6 +95,11 @@ fn main() -> anyhow::Result<()> {
             output_secrets_dir,
             volumes_dir,
         } => compile_nextcloud_units(input_secrets, output_secrets_dir, volumes_dir)?,
+        Cli::MonitorHost {
+            host,
+            output,
+            interval_seconds,
+        } => monitor_host(host, output, interval_seconds)?,
     }
 
     tracing::info!("Done");

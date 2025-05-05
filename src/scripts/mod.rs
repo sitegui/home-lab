@@ -5,6 +5,7 @@ pub mod detect_films;
 pub mod hash_files;
 pub mod install_sudo_scripts;
 pub mod install_user_units;
+pub mod monitor_host;
 pub mod move_films;
 pub mod prepare_rename_files;
 pub mod rename_files;
