@@ -182,9 +182,8 @@ services:
       - WHITEBOARD_ENABLED
     stop_grace_period: 600s
     restart: unless-stopped
-    # SITEGUI: hack, because otherwise the container could not communicate with itself using the public domain name
-    # cap_drop:
-    #  - NET_RAW
+    cap_drop:
+      - NET_RAW
 
   nextcloud-aio-notify-push:
     image: ghcr.io/nextcloud-releases/aio-notify-push:latest
