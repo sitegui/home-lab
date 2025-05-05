@@ -65,6 +65,9 @@ enum Cli {
         output_secrets_dir: PathBuf,
         #[clap(long)]
         volumes_dir: PathBuf,
+        /// Comma-separated list of profiles to enable
+        #[clap(long, value_delimiter = ',')]
+        profiles: Vec<String>,
     },
     MonitorHost {
         /// The hostname or IP
@@ -94,7 +97,8 @@ fn main() -> anyhow::Result<()> {
             input_secrets,
             output_secrets_dir,
             volumes_dir,
-        } => compile_nextcloud_units(input_secrets, output_secrets_dir, volumes_dir)?,
+            profiles,
+        } => compile_nextcloud_units(input_secrets, output_secrets_dir, volumes_dir, profiles)?,
         Cli::MonitorHost {
             host,
             output,

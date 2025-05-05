@@ -20,6 +20,7 @@ pub fn compile_nextcloud_units(
     input_secrets: PathBuf,
     output_secrets_dir: PathBuf,
     volumes_dir: PathBuf,
+    profiles: Vec<String>,
 ) -> anyhow::Result<()> {
     let output_secrets_dir = PathFromHome::new(&output_secrets_dir)?;
     let volumes_dir = PathFromHome::new(&volumes_dir)?;
@@ -34,11 +35,17 @@ pub fn compile_nextcloud_units(
     let compose: Compose = serde_yml::from_str(&compose_source)?;
 
     for (service_name, service) in compose.services {
-        if !service.profiles.is_empty() {
+        let mut service_encoder = ServiceEnvironmentEncoder::new(&encoder);
+        let service_profiles = service_encoder.encode_public_vec(&service.profiles)?;
+
+        if !service_profiles.is_empty()
+            && service_profiles
+                .iter()
+                .all(|profile| !profiles.contains(profile))
+        {
             continue;
         }
 
-        let mut service_encoder = ServiceEnvironmentEncoder::new(&encoder);
         let service_secrets_path = output_secrets_dir.join(format!("{}.env", service_name));
 
         let quadlet = compile_service(
