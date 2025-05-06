@@ -36,6 +36,10 @@ impl EnvironmentEncoder {
 
         Ok(Self { secret_vars, vars })
     }
+
+    pub fn get_var(&self, var: &str) -> Option<&str> {
+        self.vars.get(var).map(|v| v.as_str())
+    }
 }
 
 impl<'a> ServiceEnvironmentEncoder<'a> {

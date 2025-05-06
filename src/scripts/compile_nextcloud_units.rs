@@ -31,6 +31,10 @@ pub fn compile_nextcloud_units(
 
     let encoder = EnvironmentEncoder::new(&input_secrets, &nextcloud_dir.join("vars.conf"))?;
 
+    let nc_domain = encoder
+        .get_var("NC_DOMAIN")
+        .context("failed to get NC_DOMAIN")?;
+
     let compose_source = fs::read_to_string(nextcloud_dir.join("vendor/latest.yml"))?;
     let compose: Compose = serde_yml::from_str(&compose_source)?;
 
@@ -53,6 +57,7 @@ pub fn compile_nextcloud_units(
             &service_secrets_path,
             &volumes_dir,
             &service_name,
+            nc_domain,
             &service,
         )
         .with_context(|| format!("failed to compile {}", service_name))?;
@@ -72,6 +77,7 @@ fn compile_service(
     service_secrets_path: &PathFromHome,
     volumes_dir: &PathFromHome,
     service_name: &str,
+    nc_domain: &str,
     service: &ComposeService,
 ) -> anyhow::Result<Quadlet> {
     let unit = Unit {
@@ -150,6 +156,13 @@ fn compile_service(
         ),
     };
 
+    // Hack: the nextcloud-aio-nextcloud container needs to talk itself using the public domain
+    // name. However, since I'm using a public ipv6-only domain (that is, no A record on the public
+    // dns), and the podman container network doesn't have support for ipv6 (hopefully fixed in
+    // podman v5), I need this hack. This will add an entry to /etc/hosts of the container telling
+    // it that the public dns points to the host.
+    let add_host = Some(format!("{}:host-gateway", nc_domain));
+
     let container = Container {
         container_name: service_name.to_string(),
         image: encoder.encode_public(&service.image)?,
@@ -171,6 +184,7 @@ fn compile_service(
         stop_timeout_s,
         shm_size: encoder.encode_public_opt(&service.shm_size)?,
         network,
+        add_host,
     };
 
     Ok(Quadlet {

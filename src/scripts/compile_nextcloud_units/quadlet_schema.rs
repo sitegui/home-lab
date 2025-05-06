@@ -41,6 +41,7 @@ pub struct Container {
     pub stop_timeout_s: Option<i32>,
     pub shm_size: Option<String>,
     pub network: Vec<String>,
+    pub add_host: Option<String>,
 }
 
 #[derive(Debug)]
@@ -118,13 +119,18 @@ impl Display for Container {
         if let Some(stop_timeout_s) = &self.stop_timeout_s {
             // Note: this is a hack around the fact that the version I'm using does not support `StopTimeout` yet.
             // See https://github.com/containers/podman/issues/21134
-            writeln!(f, "PodmanArgs=--stop-timeout {}", stop_timeout_s)?;
+            writeln!(f, "PodmanArgs = --stop-timeout {}", stop_timeout_s)?;
         }
         if let Some(shm_size) = &self.shm_size {
             writeln!(f, "ShmSize = {}", shm_size)?;
         }
         for network in &self.network {
             writeln!(f, "Network = {}", network)?;
+        }
+        if let Some(add_host) = &self.add_host {
+            // Note: this is a hack around the fact that the version I'm using does not support `StopTimeout` yet.
+            // See https://github.com/containers/podman/issues/21134
+            writeln!(f, "PodmanArgs = --add-host {}", add_host)?;
         }
 
         Ok(())
