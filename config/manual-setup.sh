@@ -107,7 +107,7 @@ net.ipv4.ip_unprivileged_port_start=80
 EOF
 sudo sudo sysctl --system
 
-# Allow overcommit
+# Allow overcommit (required by Redis)
 sudo tee /etc/sysctl.d/sitegui-redis.conf << 'EOF'
 vm.overcommit_memory = 1
 EOF
