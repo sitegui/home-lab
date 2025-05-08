@@ -91,7 +91,8 @@ fn compile_service(
 
     let user_ns = match &service.user {
         Some(user) => {
-            format!("keep-id:uid={}", encoder.encode_public(user)?)
+            let uid = encoder.encode_public(user)?;
+            format!("keep-id:uid={},gid={}", uid, uid)
         }
         None => "keep-id".to_string(),
     };
