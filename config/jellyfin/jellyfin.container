@@ -11,7 +11,7 @@ Image = docker.io/jellyfin/jellyfin:10.10
 UserNS = keep-id
 Volume = %h/protected/jellyfin/config:/config
 Volume = %h/protected/jellyfin/cache:/cache
-Volume = %h/protected/jellyfin/media:/media
+Volume = %h/protected/nextcloud/volumes/nextcloud_aio_nextcloud_data/sitegui/files/Jellyfin:/media
 Environment = JELLYFIN_PublishedServerUrl=https://films.sitegui.dev
 Network = caddy-jellyfin.network
 
