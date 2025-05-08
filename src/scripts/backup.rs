@@ -35,7 +35,13 @@ pub fn backup() -> anyhow::Result<()> {
             home.join("protected"),
             home.join("backup-1"),
         ])
-        .args(["--archive", "--delete", "--verbose"])
+        .args([
+            "--archive",
+            "--delete",
+            "--verbose",
+            "--exclude",
+            "/protected/jellyfin/media",
+        ])
         .run()?;
 
     let last_successful_backup = protected_dir.join("last-successful-backup.txt");
