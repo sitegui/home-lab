@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
@@ -31,7 +32,7 @@ pub struct Container {
     pub health_timeout: String,
     pub health_retries: String,
     pub environment_file: Option<String>,
-    pub environment: Vec<String>,
+    pub environment: BTreeMap<String, String>,
     pub volume: Vec<String>,
     pub read_only: bool,
     pub tmpfs: Vec<String>,
@@ -97,8 +98,12 @@ impl Display for Container {
         if let Some(environment_file) = &self.environment_file {
             writeln!(f, "EnvironmentFile = {}", environment_file)?;
         }
-        for environment in &self.environment {
-            writeln!(f, "Environment = {}", environment)?;
+        for (key, value) in &self.environment {
+            writeln!(
+                f,
+                "Environment = {}",
+                systemd_quote(format!("{}={}", key, value))
+            )?;
         }
         for volume in &self.volume {
             writeln!(f, "Volume = {}", volume)?;
@@ -144,4 +149,17 @@ impl Display for Install {
 
         Ok(())
     }
+}
+
+fn systemd_quote(s: String) -> String {
+    let mut quoted = "\"".to_string();
+    for c in s.chars() {
+        match c {
+            '"' => quoted.push_str("\\\""),
+            '\\' => quoted.push_str("\\\\"),
+            c => quoted.push(c),
+        }
+    }
+    quoted.push('"');
+    quoted
 }

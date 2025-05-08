@@ -13,6 +13,7 @@ use crate::scripts::compile_nextcloud_units::quadlet_schema::{
     Container, Install, Quadlet, Service, Unit,
 };
 use anyhow::Context;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -99,10 +100,10 @@ fn compile_service(
     let add_capability = encoder.encode_public_vec(&service.cap_add)?;
     let drop_capability = encoder.encode_public_vec(&service.cap_drop)?;
 
-    let mut environment = vec![];
+    let mut environment = BTreeMap::new();
     for environment_item in &service.environment {
         if let Some((name, value)) = encoder.encode_environment(environment_item)? {
-            environment.push(format!("{}={}", name, value));
+            environment.insert(name, value);
         }
     }
 
