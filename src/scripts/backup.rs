@@ -40,7 +40,7 @@ pub fn backup() -> anyhow::Result<()> {
             "--delete",
             "--verbose",
             "--exclude",
-            "/protected/jellyfin/media",
+            "/protected/nextcloud/volumes/nextcloud_aio_nextcloud_data/sitegui/files/Jellyfin",
         ])
         .run()?;
 
