@@ -13,6 +13,7 @@ use crate::scripts::install_sudo_scripts::install_sudo_scripts;
 use crate::scripts::install_user_units::install_user_units;
 use crate::scripts::monitor_host::monitor_host;
 use crate::scripts::move_films::move_films;
+use crate::scripts::patch_takeout_exif::patch_takeout_exif;
 use crate::scripts::prepare_rename_files::prepare_rename_files;
 use crate::scripts::rename_files::rename_files;
 use crate::scripts::unlock::unlock;
@@ -77,6 +78,13 @@ enum Cli {
         #[clap(long, default_value_t = 10)]
         interval_seconds: u64,
     },
+    /// Patch the EXIF information of the photos, using the Google's takeout '*.json' files.
+    ///
+    /// The files are patched in-place, so please keep a backup
+    PatchTakeoutExif {
+        /// The folder to recursively patch
+        input: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -104,6 +112,7 @@ fn main() -> anyhow::Result<()> {
             output,
             interval_seconds,
         } => monitor_host(host, output, interval_seconds)?,
+        Cli::PatchTakeoutExif { input } => patch_takeout_exif(input)?,
     }
 
     tracing::info!("Done");

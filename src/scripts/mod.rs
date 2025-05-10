@@ -7,6 +7,7 @@ pub mod install_sudo_scripts;
 pub mod install_user_units;
 pub mod monitor_host;
 pub mod move_films;
+pub mod patch_takeout_exif;
 pub mod prepare_rename_files;
 pub mod rename_files;
 pub mod unlock;
