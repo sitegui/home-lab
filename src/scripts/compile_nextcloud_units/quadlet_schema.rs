@@ -122,8 +122,8 @@ impl Display for Container {
             writeln!(f, "Exec = {}", exec)?;
         }
         if let Some(stop_timeout_s) = &self.stop_timeout_s {
-            // Note: this is a hack around the fact that the version I'm using does not support `StopTimeout` yet.
-            // See https://github.com/containers/podman/issues/21134
+            // Note: this is a hack around the fact that the version I'm using does not support
+            // `StopTimeout` yet. See https://github.com/containers/podman/issues/21134
             writeln!(f, "PodmanArgs = --stop-timeout {}", stop_timeout_s)?;
         }
         if let Some(shm_size) = &self.shm_size {
@@ -133,8 +133,8 @@ impl Display for Container {
             writeln!(f, "Network = {}", network)?;
         }
         if let Some(add_host) = &self.add_host {
-            // Note: this is a hack around the fact that the version I'm using does not support `StopTimeout` yet.
-            // See https://github.com/containers/podman/issues/21134
+            // Note: this is a hack around the fact that the version I'm using does not support
+            // `AddHost` yet.
             writeln!(f, "PodmanArgs = --add-host {}", add_host)?;
         }
 
