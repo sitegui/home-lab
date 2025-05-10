@@ -8,6 +8,23 @@ if true; then
     exit 0
 fi
 
+###
+### Ethernet
+###
+(
+sudo tee /etc/netplan/50-cloud-init.yaml << 'EOF'
+network:
+  version: 2
+  ethernets:
+    enp3s0:
+      dhcp4: true
+EOF
+
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+
+sudo netplan apply
+)
+
 # Install Rust
 sudo apt-get install -y build-essential
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
