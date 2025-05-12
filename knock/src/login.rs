@@ -64,7 +64,10 @@ pub async fn handle_login_action(
             .or_default()
             .invalid_logins += 1;
         tracing::debug!("Failed attempt for {}", client_ip);
-        return build_redirection(&state, &form.callback);
+        return handle_login_page(Query(LoginPageQuery {
+            callback: form.callback,
+        }))
+        .await;
     }
 
     let mut random_bytes = [0u8; 8];
