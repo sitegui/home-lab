@@ -13,19 +13,24 @@ pub async fn handle_forward_auth(
     State(state): State<Arc<AppState>>,
     cookies: CookieJar,
     headers: HeaderMap,
-    uri: Uri,
 ) -> Response {
     let client_ip = unwrap_or_403!(read_client_ip(&headers).context("failed to read client ip"));
+    let uri = unwrap_or_403!(
+        headers
+            .get("X-Forwarded-Uri")
+            .and_then(|header| header.to_str().ok())
+            .context("failed to read original uri")
+    );
 
     match cookies.get(&state.config.cookie_name) {
-        Some(cookie) => handle_request_with_cookie(&state, &uri, client_ip, cookie.value()),
-        None => handle_request_without_cookie(&state, &uri, client_ip),
+        Some(cookie) => handle_request_with_cookie(&state, uri, client_ip, cookie.value()),
+        None => handle_request_without_cookie(&state, uri, client_ip),
     }
 }
 
 fn handle_request_with_cookie(
     state: &AppState,
-    uri: &Uri,
+    uri: &str,
     client_ip: IpAddr,
     cookie: &str,
 ) -> Response {
@@ -44,7 +49,7 @@ fn handle_request_with_cookie(
             drop(data);
             tracing::debug!("Session is unknown or expired: redirecting to auth");
 
-            return build_redirection(state, &uri.to_string());
+            return build_redirection(state, uri);
         }
 
         data.ip_infos.entry(client_ip).or_default().valid_until = Some(ip_valid_until);
@@ -53,7 +58,7 @@ fn handle_request_with_cookie(
     StatusCode::OK.into_response()
 }
 
-fn handle_request_without_cookie(state: &AppState, uri: &Uri, client_ip: IpAddr) -> Response {
+fn handle_request_without_cookie(state: &AppState, uri: &str, client_ip: IpAddr) -> Response {
     tracing::debug!("Request does not have session cookie");
     let now = Utc::now();
 
@@ -66,7 +71,7 @@ fn handle_request_without_cookie(state: &AppState, uri: &Uri, client_ip: IpAddr)
 
     if !is_still_valid(now, valid_until) {
         tracing::debug!("IP is unknown or expired: redirecting to auth");
-        return build_redirection(state, &uri.to_string());
+        return build_redirection(state, uri);
     }
 
     StatusCode::OK.into_response()
