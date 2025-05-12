@@ -21,10 +21,25 @@ pub async fn handle_forward_auth(
             .and_then(|header| header.to_str().ok())
             .context("failed to read original uri")
     );
+    let proto = unwrap_or_403!(
+        headers
+            .get("X-Forwarded-Proto")
+            .and_then(|header| header.to_str().ok())
+            .context("failed to read original protocol")
+    );
+    let host = unwrap_or_403!(
+        headers
+            .get("X-Forwarded-Host")
+            .and_then(|header| header.to_str().ok())
+            .context("failed to read original host")
+    );
+    
+    let callback = format!("{}://{}{}", proto, host, uri);
+    tracing::debug!("Original request: {}", callback);
 
     match cookies.get(&state.config.cookie_name) {
-        Some(cookie) => handle_request_with_cookie(&state, uri, client_ip, cookie.value()),
-        None => handle_request_without_cookie(&state, uri, client_ip),
+        Some(cookie) => handle_request_with_cookie(&state, &callback, client_ip, cookie.value()),
+        None => handle_request_without_cookie(&state, &callback, client_ip),
     }
 }
 
