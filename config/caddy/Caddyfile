@@ -43,7 +43,7 @@
 films.sitegui.dev {
     import external_sockets
     import logging
-    import auth
+    import auth_knock
 
     reverse_proxy jellyfin:8096
 }
@@ -51,7 +51,7 @@ films.sitegui.dev {
 docs.sitegui.dev {
     import external_sockets
     import logging
-    import auth
+    import auth_knock
 
     reverse_proxy nextcloud-aio-apache:11000
 }
