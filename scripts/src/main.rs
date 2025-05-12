@@ -8,6 +8,7 @@ use crate::scripts::backup::backup;
 use crate::scripts::compile_nextcloud_units::compile_nextcloud_units;
 use crate::scripts::detect_duplicates::detect_duplicates;
 use crate::scripts::detect_films::detect_films;
+use crate::scripts::generate_totp_secret::generate_totp_secret;
 use crate::scripts::hash_files::hash_files;
 use crate::scripts::install_sudo_scripts::install_sudo_scripts;
 use crate::scripts::install_user_units::install_user_units;
@@ -85,6 +86,8 @@ enum Cli {
         /// The folder to recursively patch
         input: PathBuf,
     },
+    /// Print a secret (in base 32) for TOTP
+    GenerateTotpSecret,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -113,6 +116,7 @@ fn main() -> anyhow::Result<()> {
             interval_seconds,
         } => monitor_host(host, output, interval_seconds)?,
         Cli::PatchTakeoutExif { input } => patch_takeout_exif(input)?,
+        Cli::GenerateTotpSecret => generate_totp_secret()?,
     }
 
     tracing::info!("Done");

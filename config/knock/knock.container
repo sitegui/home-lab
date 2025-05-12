@@ -9,7 +9,7 @@ ContainerName = knock
 Image = localhost/knock
 UserNS = keep-id
 Volume = %h/bare/knock/secrets:/secrets
-Environment = AUTH_HOST=knock.sitegui.dev
+Environment = AUTH_HOST=https://knock.sitegui.dev
 Environment = COOKIE_SESSION_DOMAIN=sitegui.dev
 Environment = COOKIE_SESSION_INTERVAL_SECONDS=2592000
 Environment = IP_SESSION_INTERVAL_SECONDS=86400

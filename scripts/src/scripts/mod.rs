@@ -2,6 +2,7 @@ pub mod backup;
 pub mod compile_nextcloud_units;
 pub mod detect_duplicates;
 pub mod detect_films;
+pub mod generate_totp_secret;
 pub mod hash_files;
 pub mod install_sudo_scripts;
 pub mod install_user_units;
