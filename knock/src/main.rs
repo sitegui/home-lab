@@ -43,13 +43,17 @@ async fn main() -> anyhow::Result<()> {
         "Forward auth listening on {}",
         forward_auth_listener.local_addr()?
     );
-    axum::serve(forward_auth_listener, forward_auth_router).await?;
+    let forward_auth_server =
+        tokio::spawn(axum::serve(forward_auth_listener, forward_auth_router).into_future());
 
     let login_router = Router::new()
         .route("/", get(handle_login_page).post(handle_login_action))
         .with_state(state);
     tracing::info!("Login listening on {}", login_listener.local_addr()?);
-    axum::serve(login_listener, login_router).await?;
+    let login_server = tokio::spawn(axum::serve(login_listener, login_router).into_future());
+
+    forward_auth_server.await.unwrap()?;
+    login_server.await.unwrap()?;
 
     Ok(())
 }
