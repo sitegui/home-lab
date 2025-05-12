@@ -1,4 +1,4 @@
-FROM rust:1.85.1-slim AS builder
+FROM docker.io/library/rust:1.85.1-slim AS builder
 
 WORKDIR /app
 COPY Cargo.lock Cargo.toml ./
@@ -10,7 +10,7 @@ RUN cargo build -p knock --release || true
 COPY knock knock
 RUN cargo build -p knock --release
 
-FROM debian:bookworm-slim
+FROM docker.io/library/debian:bookworm-slim
 WORKDIR /app
 COPY --from=builder /app/target/release/knock /app/knock
 COPY knock/default.env .
