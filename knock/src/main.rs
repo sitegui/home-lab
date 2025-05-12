@@ -55,5 +55,7 @@ async fn main() -> anyhow::Result<()> {
     forward_auth_server.await.unwrap()?;
     login_server.await.unwrap()?;
 
+    // TODO: graceful shutdown
+
     Ok(())
 }
