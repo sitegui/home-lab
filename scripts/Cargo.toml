@@ -2,6 +2,7 @@
 name = "home-lab"
 version = "0.1.0"
 edition = "2024"
+default-run = "home-lab"
 
 [dependencies]
 anyhow = "1.0.97"
