@@ -1,5 +1,5 @@
 use crate::AppState;
-use crate::common::{build_redirection, escape_html, read_client_ip};
+use crate::common::{escape_html, read_client_ip};
 use crate::data::CookieSessionInfo;
 use anyhow::Context;
 use axum::Form;
@@ -70,7 +70,7 @@ pub async fn handle_login_action(
         .await;
     }
 
-    let mut random_bytes = [0u8; 8];
+    let mut random_bytes = [0u8; 16];
     unwrap_or_500!(getrandom::fill(&mut random_bytes));
     let session = hex::encode(random_bytes);
 

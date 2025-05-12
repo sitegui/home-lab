@@ -2,7 +2,7 @@ use crate::AppState;
 use crate::common::{build_redirection, read_client_ip};
 use anyhow::Context;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode, Uri};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
@@ -33,7 +33,7 @@ pub async fn handle_forward_auth(
             .and_then(|header| header.to_str().ok())
             .context("failed to read original host")
     );
-    
+
     let callback = format!("{}://{}{}", proto, host, uri);
     tracing::debug!("Original request: {}", callback);
 
