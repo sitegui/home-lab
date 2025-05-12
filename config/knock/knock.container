@@ -1,0 +1,21 @@
+[Unit]
+
+[Service]
+Restart = always
+RestartSec = 10
+
+[Container]
+ContainerName = knock
+Image = knock
+UserNS = keep-id
+Volume = %h/bare/knock/secrets:/secrets
+Environment = AUTH_HOST=knock.sitegui.dev
+Environment = COOKIE_SESSION_DOMAIN=sitegui.dev
+Environment = COOKIE_SESSION_INTERVAL_SECONDS=2592000
+Environment = IP_SESSION_INTERVAL_SECONDS=86400
+Environment = RUST_LOG=DEBUG
+Environment = RUST_BACKTRACE=1
+Network = caddy-knock.network
+
+[Install]
+WantedBy = default.target

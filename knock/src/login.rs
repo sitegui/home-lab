@@ -63,7 +63,7 @@ pub async fn handle_login_action(
             .entry(client_ip)
             .or_default()
             .invalid_logins += 1;
-        tracing::debug!("Too many failed attempts for ip {}", client_ip);
+        tracing::debug!("Failed attempt for {}", client_ip);
         return build_redirection(&state, &form.callback);
     }
 
@@ -88,6 +88,7 @@ pub async fn handle_login_action(
         .http_only(true);
     let cookies = cookies.add(session_cookie);
 
+    tracing::info!("Successful attempt for {}", client_ip);
     (cookies, Redirect::temporary(&form.callback)).into_response()
 }
 

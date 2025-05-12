@@ -28,6 +28,12 @@
     }
 }
 
+(auth_knock) {
+    forward_auth knock:8080 {
+        uri /
+    }
+}
+
 {
     servers {
         protocols h1 h2
@@ -63,4 +69,19 @@ ldap.sitegui.dev:8080 {
     import logging
 
     reverse_proxy lldap:17170
+}
+
+bugabuga.sitegui.dev {
+    import external_sockets
+    import logging
+    import auth_knock
+
+    respond "Hello, world!"
+}
+
+knock.sitegui.dev {
+    import external_sockets
+    import logging
+
+    reverse_proxy knock:8081
 }

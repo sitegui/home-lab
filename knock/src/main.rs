@@ -37,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let forward_auth_router = Router::new()
-        .fallback(handle_forward_auth)
+        .route("/", get(handle_forward_auth))
         .with_state(state.clone());
     tracing::info!(
         "Forward auth listening on {}",
