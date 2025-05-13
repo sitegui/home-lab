@@ -1,10 +1,13 @@
 use anyhow::Context;
 use serde::Deserialize;
+use std::collections::BTreeSet;
 use std::fs;
+use std::net::IpAddr;
 use std::time::Duration;
 use totp_rs::{Rfc6238, Secret, TOTP};
 
 pub struct Config {
+    pub allowed_ips: BTreeSet<IpAddr>,
     pub auth_host: String,
     pub cookie_name: String,
     pub cookie_session_domain: String,
@@ -46,7 +49,17 @@ impl Config {
             totps.push(totp);
         }
 
+        let allowed_ips: anyhow::Result<BTreeSet<IpAddr>> = config
+            .allowed_ips
+            .split(',')
+            .map(|ip| {
+                ip.parse()
+                    .with_context(|| format!("failed to parse IP address: {}", ip))
+            })
+            .collect();
+
         Ok(Config {
+            allowed_ips: allowed_ips?,
             auth_host: config.auth_host,
             cookie_name: config.cookie_name,
             cookie_session_domain: config.cookie_session_domain,
@@ -67,6 +80,7 @@ impl Config {
 
 #[derive(Deserialize)]
 struct EnvConfig {
+    allowed_ips: String,
     auth_host: String,
     cookie_name: String,
     cookie_session_domain: String,

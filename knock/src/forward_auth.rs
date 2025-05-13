@@ -75,6 +75,12 @@ fn handle_request_with_cookie(
 
 fn handle_request_without_cookie(state: &AppState, uri: &str, client_ip: IpAddr) -> Response {
     tracing::debug!("Request does not have session cookie");
+
+    if state.config.allowed_ips.contains(&client_ip) {
+        tracing::debug!("IP is allowed: redirecting to auth");
+        return StatusCode::OK.into_response();
+    }
+
     let now = Utc::now();
 
     let valid_until = state
