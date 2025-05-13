@@ -13,7 +13,7 @@ Environment = AUTH_HOST=https://knock.sitegui.dev
 Environment = COOKIE_SESSION_DOMAIN=sitegui.dev
 Environment = COOKIE_SESSION_INTERVAL_SECONDS=2592000
 Environment = IP_SESSION_INTERVAL_SECONDS=86400
-Environment = RUST_LOG=INFO
+Environment = RUST_LOG=DEBUG
 Environment = RUST_BACKTRACE=1
 Network = caddy-knock.network
 
