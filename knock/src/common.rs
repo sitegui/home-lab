@@ -1,15 +1,20 @@
 use crate::AppState;
+use crate::config::Config;
 use anyhow::Context;
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect, Response};
 use std::net::IpAddr;
 
-pub fn read_client_ip(headers: &HeaderMap) -> anyhow::Result<IpAddr> {
-    let client_ips = headers
+pub fn read_header<'a>(headers: &'a HeaderMap, name: &str) -> anyhow::Result<&'a str> {
+    headers
         .get("x-forwarded-for")
-        .context("missing x-forwarded-for")?;
-    let client_ips = client_ips.to_str().context("invalid x-forwarded-for")?;
-    tracing::debug!("x-forwarded-for = {}", client_ips);
+        .with_context(|| format!("missing {}", name))?
+        .to_str()
+        .with_context(|| format!("invalid {}", name))
+}
+
+pub fn read_client_ip(headers: &HeaderMap) -> anyhow::Result<IpAddr> {
+    let client_ips = read_header(headers, "x-forwarded-for")?;
 
     let client_ip = client_ips
         .split_once(',')
@@ -21,8 +26,13 @@ pub fn read_client_ip(headers: &HeaderMap) -> anyhow::Result<IpAddr> {
     Ok(client_ip)
 }
 
-pub fn build_redirection(state: &AppState, uri: &str) -> Response {
-    Redirect::temporary(&format!("{}/?callback={}", state.config.auth_host, uri)).into_response()
+pub fn build_redirection(config: &Config, callback: &str) -> Response {
+    Redirect::temporary(&format!(
+        "{}/?callback={}",
+        config.login_hostname,
+        urlencoding::encode(callback)
+    ))
+    .into_response()
 }
 
 pub fn escape_html(value: &str) -> String {

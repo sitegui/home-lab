@@ -1,10 +1,15 @@
 #[macro_use]
 mod macros;
+mod alive_timer;
+mod ban_timer;
 mod common;
 mod config;
 mod data;
 mod forward_auth;
 mod login;
+mod network;
+mod parse_duration;
+mod string_hash;
 
 use crate::config::Config;
 use crate::data::Data;
@@ -29,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
 
     let forward_auth_listener =
         TcpListener::bind((config.forward_auth_bind.as_str(), config.forward_auth_port)).await?;
-    let login_listener = TcpListener::bind((config.login_bin.as_str(), config.login_port)).await?;
+    let login_listener = TcpListener::bind((config.login_bind.as_str(), config.login_port)).await?;
 
     let state = Arc::new(AppState {
         data: Mutex::new(Data::default()),

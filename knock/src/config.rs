@@ -1,25 +1,29 @@
+use crate::network::Network;
+use crate::parse_duration::parse_duration;
 use anyhow::Context;
+use chrono::TimeDelta;
 use serde::Deserialize;
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::fs;
-use std::net::IpAddr;
-use std::time::Duration;
 use totp_rs::{Rfc6238, Secret, TOTP};
 
 pub struct Config {
-    pub allowed_ips: BTreeSet<IpAddr>,
-    pub auth_host: String,
-    pub cookie_name: String,
-    pub cookie_session_domain: String,
-    pub cookie_session_interval: Duration,
+    pub allowed_networks: Vec<Network>,
+    pub failed_login_ban: TimeDelta,
+    pub failed_login_max_attempts_per_ip: u16,
+    pub failed_login_max_attempts_per_user: u16,
     pub forward_auth_bind: String,
     pub forward_auth_port: u16,
-    pub ip_session_interval: Duration,
-    pub login_bin: String,
+    pub ip_session_max_inactivity: TimeDelta,
+    pub knock_cookie_domain: String,
+    pub knock_cookie_name: String,
+    pub login_bind: String,
+    pub login_hostname: String,
     pub login_port: u16,
-    pub login_sleep: Duration,
-    pub max_failed_attempts_per_ip: u32,
-    pub totps: Vec<TOTP>,
+    pub login_throttle: TimeDelta,
+    pub session_max_inactivity: TimeDelta,
+    pub session_max_lifetime: TimeDelta,
+    pub totps: BTreeMap<String, TOTP>,
 }
 
 impl Config {
@@ -29,50 +33,36 @@ impl Config {
         let config: EnvConfig = envy::from_env().context("failed to load configuration. \
         Please make sure that all requires environment variables described in the documentation are set")?;
 
-        let totp_secrets = fs::read_to_string(&config.totp_secrets_file).with_context(|| {
-            format!(
-                "failed to read TOTP secrets file: {}",
-                config.totp_secrets_file
-            )
-        })?;
+        let users_str = fs::read_to_string(&config.users_file)
+            .with_context(|| format!("failed to read users file: {}", config.users_file))?;
 
-        let mut totps = vec![];
-        for secret in totp_secrets.lines() {
-            let secret_bytes = Secret::Encoded(secret.to_string()).to_bytes().context(
-                "failed to decode TOTP secret. \
-            Make sure it's saved one secret per line and encoded in base32",
-            )?;
-            let totp = TOTP::from_rfc6238(
-                Rfc6238::with_defaults(secret_bytes).context("failed to create TOTP instance")?,
-            )
-            .context("failed to create TOTP instance")?;
-            totps.push(totp);
-        }
+        let totps = users_str
+            .lines()
+            .map(|user_str| parse_user(user_str).context("failed to parse user"))
+            .collect::<anyhow::Result<_, _>>()?;
 
-        let allowed_ips: anyhow::Result<BTreeSet<IpAddr>> = config
-            .allowed_ips
+        let allowed_networks = config
+            .allowed_networks
             .split(',')
-            .map(|ip| {
-                ip.parse()
-                    .with_context(|| format!("failed to parse IP address: {}", ip))
-            })
-            .collect();
+            .map(|network| network.parse())
+            .collect::<anyhow::Result<_, _>>()?;
 
         Ok(Config {
-            allowed_ips: allowed_ips?,
-            auth_host: config.auth_host,
-            cookie_name: config.cookie_name,
-            cookie_session_domain: config.cookie_session_domain,
-            cookie_session_interval: Duration::from_secs_f64(
-                config.cookie_session_interval_seconds,
-            ),
+            allowed_networks,
+            failed_login_ban: parse_duration(&config.failed_login_ban)?,
+            failed_login_max_attempts_per_ip: config.failed_login_max_attempts_per_ip,
+            failed_login_max_attempts_per_user: config.failed_login_max_attempts_per_user,
             forward_auth_bind: config.forward_auth_bind,
             forward_auth_port: config.forward_auth_port,
-            ip_session_interval: Duration::from_secs_f64(config.ip_session_interval_seconds),
-            login_bin: config.login_bind,
+            ip_session_max_inactivity: parse_duration(&config.ip_session_max_inactivity)?,
+            knock_cookie_domain: config.knock_cookie_domain,
+            knock_cookie_name: config.knock_cookie_name,
+            login_bind: config.login_bind,
+            login_hostname: config.login_hostname,
             login_port: config.login_port,
-            login_sleep: Duration::from_secs_f64(config.login_sleep_seconds),
-            max_failed_attempts_per_ip: config.max_failed_attempts_per_ip,
+            login_throttle: parse_duration(&config.login_throttle)?,
+            session_max_inactivity: parse_duration(&config.session_max_inactivity)?,
+            session_max_lifetime: parse_duration(&config.session_max_lifetime)?,
             totps,
         })
     }
@@ -80,17 +70,38 @@ impl Config {
 
 #[derive(Deserialize)]
 struct EnvConfig {
-    allowed_ips: String,
-    auth_host: String,
-    cookie_name: String,
-    cookie_session_domain: String,
-    cookie_session_interval_seconds: f64,
+    allowed_networks: String,
+    failed_login_ban: String,
+    failed_login_max_attempts_per_ip: u16,
+    failed_login_max_attempts_per_user: u16,
     forward_auth_bind: String,
     forward_auth_port: u16,
-    ip_session_interval_seconds: f64,
+    ip_session_max_inactivity: String,
+    knock_cookie_domain: String,
+    knock_cookie_name: String,
     login_bind: String,
+    login_hostname: String,
     login_port: u16,
-    login_sleep_seconds: f64,
-    max_failed_attempts_per_ip: u32,
-    totp_secrets_file: String,
+    login_throttle: String,
+    session_max_inactivity: String,
+    session_max_lifetime: String,
+    users_file: String,
+}
+
+fn parse_user(s: &str) -> anyhow::Result<(String, TOTP)> {
+    let (name, secret) = s.split_once(',').context("missing comma")?;
+
+    let secret_bytes = Secret::Encoded(secret.trim().to_string())
+        .to_bytes()
+        .context(
+            "failed to decode TOTP secret. \
+            Make sure it's saved one secret per line and encoded in base32",
+        )?;
+    let totp = TOTP::from_rfc6238(
+        Rfc6238::with_defaults(secret_bytes).context("failed to create TOTP instance")?,
+    )
+    .context("failed to create TOTP instance")?;
+
+    let name = name.trim().to_string();
+    Ok((name, totp))
 }

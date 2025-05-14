@@ -10,13 +10,15 @@ axum-extra = { version = "0.10.1", features = ["cookie"] }
 chrono = { version = "0.4.41", features = ["serde"] }
 dotenvy = "0.15.7"
 envy = "0.4.2"
+getrandom = "0.3.3"
+hex = "0.4.3"
 parking_lot = "0.12.3"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+sha2 = "0.10.9"
+time = "0.3.41"
 tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 totp-rs = "5.7.0"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
-getrandom = "0.3.3"
-hex = "0.4.3"
-time = "0.3.41"
+urlencoding = "2.1.3"

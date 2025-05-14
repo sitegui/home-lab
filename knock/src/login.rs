@@ -1,6 +1,5 @@
 use crate::AppState;
 use crate::common::{escape_html, read_client_ip};
-use crate::data::CookieSessionInfo;
 use anyhow::Context;
 use axum::Form;
 use axum::extract::{Query, State};
@@ -84,8 +83,8 @@ pub async fn handle_login_action(
         .insert(session.clone(), CookieSessionInfo { valid_until });
 
     let max_age = unwrap_or_500!(::time::Duration::try_from(config.cookie_session_interval));
-    let session_cookie = Cookie::build((config.cookie_name.clone(), session))
-        .domain(config.cookie_session_domain.clone())
+    let session_cookie = Cookie::build((config.knock_cookie_name.clone(), session))
+        .domain(config.knock_cookie_domain.clone())
         .max_age(max_age)
         .secure(true)
         .http_only(true);
