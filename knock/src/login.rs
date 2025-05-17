@@ -24,7 +24,7 @@ pub struct LoginPageQuery {
 #[derive(Deserialize)]
 pub struct LoginPageForm {
     callback: String,
-    user: String,
+    username: String,
     token: String,
 }
 
@@ -58,7 +58,7 @@ pub async fn handle_login_action(
         );
         let user_attempt = data
             .users
-            .entry(form.user.clone())
+            .entry(form.username.clone())
             .or_default()
             .ban_timer
             .attempt(
@@ -71,12 +71,12 @@ pub async fn handle_login_action(
             tracing::info!(
                 "FAILED: too many failed attempts for ip {} or user {}",
                 client_ip,
-                form.user
+                form.username
             );
             return StatusCode::UNAUTHORIZED.into_response();
         };
 
-        let Some(totps) = config.totps_by_user.get(&form.user) else {
+        let Some(totps) = config.totps_by_user.get(&form.username) else {
             tracing::info!("FAILED: unknown user");
             return StatusCode::UNAUTHORIZED.into_response();
         };
@@ -101,7 +101,7 @@ pub async fn handle_login_action(
         data.knock_sessions.insert(
             session_hash,
             Session {
-                user_name: form.user.clone(),
+                user_name: form.username.clone(),
                 login_ip: client_ip,
                 timer: AliveTimer::new(now),
             },
@@ -121,7 +121,7 @@ pub async fn handle_login_action(
         .http_only(true);
     let cookies = cookies.add(session_cookie);
 
-    tracing::info!("SUCCESS: {} login at {}", form.user, client_ip);
+    tracing::info!("SUCCESS: {} login at {}", form.username, client_ip);
     (cookies, Redirect::temporary(&form.callback)).into_response()
 }
 
