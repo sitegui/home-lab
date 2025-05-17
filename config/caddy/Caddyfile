@@ -37,7 +37,7 @@
 films.sitegui.dev {
     import external_sockets
     import logging
-    import auth_knock
+    import auth
 
     reverse_proxy jellyfin:8096
 }
@@ -45,7 +45,7 @@ films.sitegui.dev {
 docs.sitegui.dev {
     import external_sockets
     import logging
-    import auth_knock
+    import auth
 
     reverse_proxy nextcloud-aio-apache:11000
 }
@@ -61,7 +61,7 @@ ldap.sitegui.dev:8080 {
 bugabuga.sitegui.dev {
     import external_sockets
     import logging
-    import auth_knock
+    import auth
 
     respond "Hello, world!"
 }
