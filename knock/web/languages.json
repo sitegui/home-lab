@@ -1,0 +1,18 @@
+{
+  "en": {
+    "en": "en",
+    "You need to authenticate": "You need to authenticate",
+    "Username:": "Username:",
+    "Code:": "Code:",
+    "6 digits": "6 digits",
+    "Login": "Login"
+  },
+  "fr": {
+    "en": "fr",
+    "You need to authenticate": "Vous devez vous authentifier",
+    "Username:": "Nom d'utilisateur :",
+    "Code:": "Code :",
+    "6 digits": "6 chiffres",
+    "Login": "Connexion"
+  }
+}

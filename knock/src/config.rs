@@ -1,3 +1,4 @@
+use crate::i18n::I18n;
 use crate::network::Network;
 use crate::parse_duration::parse_duration;
 use anyhow::Context;
@@ -14,6 +15,8 @@ pub struct Config {
     pub failed_login_max_attempts_per_user: u16,
     pub forward_auth_bind: String,
     pub forward_auth_port: u16,
+    pub i18n: I18n,
+    pub i18n_language: String,
     pub ip_session_max_inactivity: TimeDelta,
     pub knock_cookie_domain: String,
     pub knock_cookie_name: String,
@@ -32,6 +35,10 @@ impl Config {
 
         let config: EnvConfig = envy::from_env().context("failed to load configuration. \
         Please make sure that all requires environment variables described in the documentation are set")?;
+
+        let i18n_contents = fs::read_to_string(&config.i18n_file)
+            .with_context(|| format!("failed to read i18n file: {}", config.i18n_file))?;
+        let i18n = I18n::new(&i18n_contents)?;
 
         let users_str = fs::read_to_string(&config.users_file)
             .with_context(|| format!("failed to read users file: {}", config.users_file))?;
@@ -55,6 +62,8 @@ impl Config {
             failed_login_max_attempts_per_user: config.failed_login_max_attempts_per_user,
             forward_auth_bind: config.forward_auth_bind,
             forward_auth_port: config.forward_auth_port,
+            i18n,
+            i18n_language: config.i18n_language,
             ip_session_max_inactivity: parse_duration(&config.ip_session_max_inactivity)?,
             knock_cookie_domain: config.knock_cookie_domain,
             knock_cookie_name: config.knock_cookie_name,
@@ -77,6 +86,8 @@ struct EnvConfig {
     failed_login_max_attempts_per_user: u16,
     forward_auth_bind: String,
     forward_auth_port: u16,
+    i18n_file: String,
+    i18n_language: String,
     ip_session_max_inactivity: String,
     knock_cookie_domain: String,
     knock_cookie_name: String,

@@ -1,6 +1,7 @@
 use crate::AppState;
 use crate::alive_timer::AliveTimer;
 use crate::common::{escape_html, read_client_ip};
+use crate::config::Config;
 use crate::data::{IpSession, Session};
 use crate::string_hash::StringHash;
 use anyhow::Context;
@@ -27,8 +28,11 @@ pub struct LoginPageForm {
     token: String,
 }
 
-pub async fn handle_login_page(Query(query): Query<LoginPageQuery>) -> Response {
-    render_login_page(&query.callback)
+pub async fn handle_login_page(
+    State(state): State<Arc<AppState>>,
+    Query(query): Query<LoginPageQuery>,
+) -> Response {
+    render_login_page(&state.config, &query.callback)
 }
 
 pub async fn handle_login_action(
@@ -79,7 +83,7 @@ pub async fn handle_login_action(
 
         if !unwrap_or_500!(check_token(totps, &form.token)) {
             tracing::info!("FAILED: invalid token");
-            return render_login_page(&form.callback);
+            return render_login_page(config, &form.callback);
         }
 
         ip_attempt.report_success();
@@ -121,9 +125,14 @@ pub async fn handle_login_action(
     (cookies, Redirect::temporary(&form.callback)).into_response()
 }
 
-fn render_login_page(callback: &str) -> Response {
-    let login_html =
-        include_str!("../web/login.html").replace("{{callback}}", &escape_html(callback));
+fn render_login_page(config: &Config, callback: &str) -> Response {
+    let login_html = unwrap_or_500!(
+        config
+            .i18n
+            .translate(&config.i18n_language, include_str!("../web/login.html"))
+    );
+
+    let login_html = login_html.replace("{{callback}}", &escape_html(callback));
 
     ([("content-type", "text/html")], login_html).into_response()
 }

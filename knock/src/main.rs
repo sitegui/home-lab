@@ -6,6 +6,7 @@ mod common;
 mod config;
 mod data;
 mod forward_auth;
+mod i18n;
 mod login;
 mod network;
 mod parse_duration;
