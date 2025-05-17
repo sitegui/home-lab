@@ -6,7 +6,7 @@ use std::net::IpAddr;
 
 pub fn read_header<'a>(headers: &'a HeaderMap, name: &str) -> anyhow::Result<&'a str> {
     headers
-        .get("x-forwarded-for")
+        .get(name)
         .with_context(|| format!("missing {}", name))?
         .to_str()
         .with_context(|| format!("invalid {}", name))
