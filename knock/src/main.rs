@@ -12,6 +12,7 @@ mod network;
 mod parse_duration;
 mod persistence;
 mod string_hash;
+mod terminate;
 mod throttle;
 
 use crate::config::Config;
@@ -19,6 +20,7 @@ use crate::data::Data;
 use crate::forward_auth::handle_forward_auth;
 use crate::login::{handle_login_action, handle_login_page};
 use crate::persistence::load_and_spawn_persist_loop;
+use crate::terminate::TERMINATE;
 use crate::throttle::Throttle;
 use axum::Router;
 use axum::routing::get;
@@ -57,19 +59,24 @@ async fn main() -> anyhow::Result<()> {
         "Forward auth listening on {}",
         forward_auth_listener.local_addr()?
     );
-    let forward_auth_server =
-        tokio::spawn(axum::serve(forward_auth_listener, forward_auth_router).into_future());
+    let forward_auth_server = tokio::spawn(
+        axum::serve(forward_auth_listener, forward_auth_router)
+            .with_graceful_shutdown(TERMINATE.wait())
+            .into_future(),
+    );
 
     let login_router = Router::new()
         .route("/", get(handle_login_page).post(handle_login_action))
         .with_state(state);
     tracing::info!("Login listening on {}", login_listener.local_addr()?);
-    let login_server = tokio::spawn(axum::serve(login_listener, login_router).into_future());
+    let login_server = tokio::spawn(
+        axum::serve(login_listener, login_router)
+            .with_graceful_shutdown(TERMINATE.wait())
+            .into_future(),
+    );
 
     forward_auth_server.await.unwrap()?;
     login_server.await.unwrap()?;
-
-    // TODO: graceful shutdown
 
     Ok(())
 }
