@@ -33,12 +33,17 @@ async fn persist_loop(data: Arc<Mutex<Data>>, path: PathBuf, flush_interval: Tim
     loop {
         tokio::time::sleep(flush_interval.to_std().unwrap()).await;
 
-        let contents = serde_json::to_string(&*data.lock())
+        let persisted = serde_json::to_string(&*data.lock())
             .context("failed to serialize")
             .and_then(|contents| fs::write(&path, contents).context("failed to persist"));
 
-        if let Err(error) = contents {
-            tracing::error!("Failed to persist data: {:?}", error);
+        match persisted {
+            Err(error) => {
+                tracing::error!("Failed to persist data: {:?}", error);
+            }
+            Ok(()) => {
+                tracing::debug!("Data persisted");
+            }
         }
     }
 }
