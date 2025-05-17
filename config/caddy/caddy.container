@@ -12,7 +12,6 @@ Volume = %h/bare/caddy/data:/data
 Volume = %h/bare/caddy/config:/config
 Network = caddy.network
 Network = caddy-lldap.network
-Network = caddy-authelia.network
 Network = caddy-jellyfin.network
 Network = caddy-nextcloud.network
 Network = caddy-knock.network

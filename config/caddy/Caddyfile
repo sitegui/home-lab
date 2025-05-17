@@ -23,12 +23,6 @@
 }
 
 (auth) {
-    forward_auth authelia:9091 {
-        uri /api/authz/forward-auth
-    }
-}
-
-(auth_knock) {
     forward_auth knock:8080 {
         uri /
     }
@@ -54,13 +48,6 @@ docs.sitegui.dev {
     import auth_knock
 
     reverse_proxy nextcloud-aio-apache:11000
-}
-
-auth.sitegui.dev {
-    import external_sockets
-    import logging
-
-    reverse_proxy authelia:9091
 }
 
 # The port 8080 is configured at the firewall level to only be open for ips from the internal network

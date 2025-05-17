@@ -147,25 +147,6 @@ openssl rand -hex 16 > secrets/ldap_user_pass
 )
 
 ###
-### Authelia
-###
-(
-# Go to https://ldap.sitegui.dev:8080/users/create and create a new user with password from the password file
-# `ldap_password` below, then add it to the group `lldap_password_manager`
-
-mkdir "$HOME/bare/authelia"
-cd "$HOME/bare/authelia"
-
-mkdir secrets
-mkdir data
-
-openssl rand -hex 16 > secrets/ldap_password
-openssl rand -hex 16 > secrets/jwt_secret
-openssl rand -hex 16 > secrets/session_secret
-openssl rand -hex 16 > secrets/encryption_key
-)
-
-###
 ### Next cloud
 ###
 (
