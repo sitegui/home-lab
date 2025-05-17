@@ -9,13 +9,13 @@ ContainerName = knock
 Image = localhost/knock
 UserNS = keep-id
 Volume = %h/bare/knock/secrets:/secrets
-Environment = ALLOWED_IPS=192.168.1.51
-Environment = AUTH_HOST=https://knock.sitegui.dev
-Environment = COOKIE_SESSION_DOMAIN=sitegui.dev
-Environment = COOKIE_SESSION_INTERVAL_SECONDS=2592000
-Environment = IP_SESSION_INTERVAL_SECONDS=86400
+Environment = ALLOWED_NETWORKS=192.168.1.0/24
+Environment = FORWARD_AUTH_BIND=0.0.0.0
+Environment = I18N_LANGUAGE=fr
+Environment = KNOCK_COOKIE_DOMAIN=sitegui.dev
+Environment = LOGIN_BIND=0.0.0.0
+Environment = LOGIN_HOSTNAME=https://knock.sitegui.dev
 Environment = RUST_LOG=DEBUG
-Environment = RUST_BACKTRACE=1
 Network = caddy-knock.network
 
 [Install]
