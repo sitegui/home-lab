@@ -23,7 +23,7 @@ pub struct Config {
     pub login_throttle: TimeDelta,
     pub session_max_inactivity: TimeDelta,
     pub session_max_lifetime: TimeDelta,
-    pub totps: BTreeMap<String, TOTP>,
+    pub totps_by_user: BTreeMap<String, Vec<TOTP>>,
 }
 
 impl Config {
@@ -36,10 +36,11 @@ impl Config {
         let users_str = fs::read_to_string(&config.users_file)
             .with_context(|| format!("failed to read users file: {}", config.users_file))?;
 
-        let totps = users_str
-            .lines()
-            .map(|user_str| parse_user(user_str).context("failed to parse user"))
-            .collect::<anyhow::Result<_, _>>()?;
+        let mut totps_by_user: BTreeMap<_, Vec<_>> = BTreeMap::new();
+        for user_str in users_str.lines() {
+            let (name, totp) = parse_user(user_str).context("failed to parse user")?;
+            totps_by_user.entry(name).or_default().push(totp);
+        }
 
         let allowed_networks = config
             .allowed_networks
@@ -63,7 +64,7 @@ impl Config {
             login_throttle: parse_duration(&config.login_throttle)?,
             session_max_inactivity: parse_duration(&config.session_max_inactivity)?,
             session_max_lifetime: parse_duration(&config.session_max_lifetime)?,
-            totps,
+            totps_by_user,
         })
     }
 }

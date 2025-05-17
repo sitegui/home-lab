@@ -10,11 +10,13 @@ mod login;
 mod network;
 mod parse_duration;
 mod string_hash;
+mod throttle;
 
 use crate::config::Config;
 use crate::data::Data;
 use crate::forward_auth::handle_forward_auth;
 use crate::login::{handle_login_action, handle_login_page};
+use crate::throttle::Throttle;
 use axum::Router;
 use axum::routing::get;
 use parking_lot::Mutex;
@@ -24,6 +26,7 @@ use tokio::net::TcpListener;
 struct AppState {
     data: Mutex<Data>,
     config: Config,
+    throttle: Throttle,
 }
 
 #[tokio::main]
@@ -39,6 +42,7 @@ async fn main() -> anyhow::Result<()> {
     let state = Arc::new(AppState {
         data: Mutex::new(Data::default()),
         config,
+        throttle: Throttle::default(),
     });
 
     let forward_auth_router = Router::new()

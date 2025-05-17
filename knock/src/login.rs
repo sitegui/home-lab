@@ -1,5 +1,8 @@
 use crate::AppState;
+use crate::alive_timer::AliveTimer;
 use crate::common::{escape_html, read_client_ip};
+use crate::data::{IpSession, Session};
+use crate::string_hash::StringHash;
 use anyhow::Context;
 use axum::Form;
 use axum::extract::{Query, State};
@@ -7,9 +10,9 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::Cookie;
+use chrono::Utc;
 use serde::Deserialize;
 use std::sync::Arc;
-use tokio::time;
 use totp_rs::TOTP;
 
 #[derive(Deserialize)]
@@ -20,14 +23,12 @@ pub struct LoginPageQuery {
 #[derive(Deserialize)]
 pub struct LoginPageForm {
     callback: String,
+    user: String,
     token: String,
 }
 
 pub async fn handle_login_page(Query(query): Query<LoginPageQuery>) -> Response {
-    let login_html =
-        include_str!("../web/login.html").replace("{{callback}}", &escape_html(&query.callback));
-
-    ([("content-type", "text/html")], login_html).into_response()
+    render_login_page(&query.callback)
 }
 
 pub async fn handle_login_action(
@@ -39,50 +40,76 @@ pub async fn handle_login_action(
     // TODO: validate callback
 
     let config = &state.config;
-    time::sleep(config.login_sleep).await;
+    state.throttle.wait(config.login_throttle).await;
 
     let client_ip = unwrap_or_403!(read_client_ip(&headers));
-    let invalid_logins = state
-        .data
-        .lock()
-        .ip_infos
-        .get(&client_ip)
-        .map(|info| info.invalid_logins)
-        .unwrap_or(0);
-    if invalid_logins > config.max_failed_attempts_per_ip {
-        tracing::debug!("Too many failed attempts for ip {}", client_ip);
-        return StatusCode::UNAUTHORIZED.into_response();
-    }
-
-    if !unwrap_or_500!(check_token(&state.config.totps, &form.token)) {
-        state
-            .data
-            .lock()
-            .ip_infos
-            .entry(client_ip)
+    let now = Utc::now();
+    {
+        let mut data = state.data.lock();
+        let data = &mut *data;
+        let ip_attempt = data.ips.entry(client_ip).or_default().ban_timer.attempt(
+            now,
+            config.failed_login_max_attempts_per_ip,
+            config.failed_login_ban,
+        );
+        let user_attempt = data
+            .users
+            .entry(form.user.clone())
             .or_default()
-            .invalid_logins += 1;
-        tracing::debug!("Failed attempt for {}", client_ip);
-        return handle_login_page(Query(LoginPageQuery {
-            callback: form.callback,
-        }))
-        .await;
+            .ban_timer
+            .attempt(
+                now,
+                config.failed_login_max_attempts_per_user,
+                config.failed_login_ban,
+            );
+
+        let Some((ip_attempt, user_attempt)) = ip_attempt.zip(user_attempt) else {
+            tracing::info!(
+                "FAILED: too many failed attempts for ip {} or user {}",
+                client_ip,
+                form.user
+            );
+            return StatusCode::UNAUTHORIZED.into_response();
+        };
+
+        let Some(totps) = config.totps_by_user.get(&form.user) else {
+            tracing::info!("FAILED: unknown user");
+            return StatusCode::UNAUTHORIZED.into_response();
+        };
+
+        if !unwrap_or_500!(check_token(totps, &form.token)) {
+            tracing::info!("FAILED: invalid token");
+            return render_login_page(&form.callback);
+        }
+
+        ip_attempt.report_success();
+        user_attempt.report_success();
     }
 
     let mut random_bytes = [0u8; 16];
     unwrap_or_500!(getrandom::fill(&mut random_bytes));
     let session = hex::encode(random_bytes);
+    let session_hash = StringHash::new(&session);
 
-    let now = chrono::Utc::now();
-    let valid_until = now + config.cookie_session_interval;
+    {
+        let mut data = state.data.lock();
 
-    state
-        .data
-        .lock()
-        .cookie_sessions
-        .insert(session.clone(), CookieSessionInfo { valid_until });
+        data.knock_sessions.insert(
+            session_hash,
+            Session {
+                user_name: form.user.clone(),
+                login_ip: client_ip,
+                timer: AliveTimer::new(now),
+            },
+        );
+        data.ips.entry(client_ip).or_default().session = Some(IpSession {
+            session: session_hash,
+            last_activity: now,
+        });
+    }
 
-    let max_age = unwrap_or_500!(::time::Duration::try_from(config.cookie_session_interval));
+    let max_age =
+        ::time::Duration::try_from(config.session_max_lifetime.to_std().unwrap()).unwrap();
     let session_cookie = Cookie::build((config.knock_cookie_name.clone(), session))
         .domain(config.knock_cookie_domain.clone())
         .max_age(max_age)
@@ -90,8 +117,15 @@ pub async fn handle_login_action(
         .http_only(true);
     let cookies = cookies.add(session_cookie);
 
-    tracing::info!("Successful attempt for {}", client_ip);
+    tracing::info!("SUCCESS: {} login at {}", form.user, client_ip);
     (cookies, Redirect::temporary(&form.callback)).into_response()
+}
+
+fn render_login_page(callback: &str) -> Response {
+    let login_html =
+        include_str!("../web/login.html").replace("{{callback}}", &escape_html(callback));
+
+    ([("content-type", "text/html")], login_html).into_response()
 }
 
 fn check_token(totps: &[TOTP], token: &str) -> anyhow::Result<bool> {

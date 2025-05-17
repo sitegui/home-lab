@@ -1,4 +1,3 @@
-use crate::AppState;
 use crate::config::Config;
 use anyhow::Context;
 use axum::http::HeaderMap;

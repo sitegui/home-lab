@@ -8,32 +8,52 @@ pub struct BanTimer {
     banned_until: Option<DateTime<Utc>>,
 }
 
+/// If the method [`Attempting::report_success()`] is not called, a failure will be reported.
 #[derive(Debug)]
 pub struct Attempting<'a> {
     now: DateTime<Utc>,
     timer: &'a mut BanTimer,
+    max_failures: u16,
+    ban_duration: TimeDelta,
+    reported_success: bool,
 }
 
 impl BanTimer {
-    pub fn attempt(&mut self, now: DateTime<Utc>) -> Option<Attempting> {
+    pub fn attempt(
+        &mut self,
+        now: DateTime<Utc>,
+        max_failures: u16,
+        ban_duration: TimeDelta,
+    ) -> Option<Attempting> {
         match self.banned_until {
             Some(banned_until) if banned_until > now => None,
-            _ => Some(Attempting { now, timer: self }),
+            _ => Some(Attempting {
+                now,
+                timer: self,
+                max_failures,
+                ban_duration,
+                reported_success: false,
+            }),
         }
     }
 }
 
 impl Attempting<'_> {
-    pub fn report_success(self) {
+    pub fn report_success(mut self) {
         self.timer.failures = 0;
         self.timer.banned_until = None;
+        self.reported_success = true;
     }
+}
 
-    pub fn report_failure(self, max_failures: u16, ban_duration: TimeDelta) {
-        self.timer.failures += 1;
-        if self.timer.failures >= max_failures {
-            self.timer.failures = 0;
-            self.timer.banned_until = Some(self.now + ban_duration);
+impl Drop for Attempting<'_> {
+    fn drop(&mut self) {
+        if !self.reported_success {
+            self.timer.failures += 1;
+            if self.timer.failures >= self.max_failures {
+                self.timer.failures = 0;
+                self.timer.banned_until = Some(self.now + self.ban_duration);
+            }
         }
     }
 }
@@ -49,28 +69,24 @@ mod tests {
         let max_failures = 2;
         let ban_duration = TimeDelta::seconds(10);
 
-        timer
-            .attempt(start)
-            .unwrap()
-            .report_failure(max_failures, ban_duration);
-        timer
-            .attempt(start)
-            .unwrap()
-            .report_failure(max_failures, ban_duration);
-        assert!(timer.attempt(start).is_none());
+        drop(timer.attempt(start, max_failures, ban_duration).unwrap());
+        drop(timer.attempt(start, max_failures, ban_duration).unwrap());
+        assert!(timer.attempt(start, max_failures, ban_duration).is_none());
 
+        drop(
+            timer
+                .attempt(start + ban_duration, max_failures, ban_duration)
+                .unwrap(),
+        );
         timer
-            .attempt(start + ban_duration)
-            .unwrap()
-            .report_failure(max_failures, ban_duration);
-        timer
-            .attempt(start + ban_duration)
+            .attempt(start + ban_duration, max_failures, ban_duration)
             .unwrap()
             .report_success();
-        timer
-            .attempt(start + ban_duration)
-            .unwrap()
-            .report_failure(max_failures, ban_duration);
+        drop(
+            timer
+                .attempt(start + ban_duration, max_failures, ban_duration)
+                .unwrap(),
+        );
         assert_eq!(timer.failures, 1);
     }
 }

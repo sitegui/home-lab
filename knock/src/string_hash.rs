@@ -16,7 +16,7 @@ impl StringHash {
     }
 
     fn as_hex(&self) -> String {
-        hex::encode(&self.0)
+        hex::encode(self.0)
     }
 
     fn from_hex(data: &str) -> anyhow::Result<Self> {
