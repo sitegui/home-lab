@@ -16,7 +16,7 @@ pub async fn handle_forward_auth(
     cookies: CookieJar,
     headers: HeaderMap,
 ) -> Response {
-    tracing::debug!("Received request with headers: {:#?}", headers);
+    tracing::trace!("Received request with headers: {:#?}", headers);
 
     let client_ip = unwrap_or_403!(read_client_ip(&headers).context("failed to read client ip"));
     let uri = unwrap_or_403!(read_header(&headers, "x-forwarded-uri"));
@@ -24,7 +24,17 @@ pub async fn handle_forward_auth(
     let host = unwrap_or_403!(read_header(&headers, "x-forwarded-host"));
 
     let callback = format!("{}://{}{}", proto, host, uri);
-    tracing::debug!("Original request: {}", callback);
+    if tracing::enabled!(tracing::Level::DEBUG) {
+        let callback_without_params = match callback.split_once('?') {
+            None => callback.clone(),
+            Some((before, _)) => format!("{}?<REDACTED>", before),
+        };
+        tracing::debug!(
+            "Original request by {} for {}",
+            client_ip,
+            callback_without_params
+        );
+    }
 
     match cookies.get(&state.config.knock_cookie_name) {
         Some(cookie) => {
