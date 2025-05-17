@@ -6,10 +6,13 @@ use chrono::TimeDelta;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs;
+use std::path::PathBuf;
 use totp_rs::{Rfc6238, Secret, TOTP};
 
 pub struct Config {
     pub allowed_networks: Vec<Network>,
+    pub data_file: PathBuf,
+    pub data_persistence_interval: TimeDelta,
     pub failed_login_ban: TimeDelta,
     pub failed_login_max_attempts_per_ip: u16,
     pub failed_login_max_attempts_per_user: u16,
@@ -37,11 +40,12 @@ impl Config {
         Please make sure that all requires environment variables described in the documentation are set")?;
 
         let i18n_contents = fs::read_to_string(&config.i18n_file)
-            .with_context(|| format!("failed to read i18n file: {}", config.i18n_file))?;
+            .with_context(|| format!("failed to read i18n file: {}", config.i18n_file.display()))?;
         let i18n = I18n::new(&i18n_contents)?;
 
-        let users_str = fs::read_to_string(&config.users_file)
-            .with_context(|| format!("failed to read users file: {}", config.users_file))?;
+        let users_str = fs::read_to_string(&config.users_file).with_context(|| {
+            format!("failed to read users file: {}", config.users_file.display())
+        })?;
 
         let mut totps_by_user: BTreeMap<_, Vec<_>> = BTreeMap::new();
         for user_str in users_str.lines() {
@@ -57,6 +61,8 @@ impl Config {
 
         Ok(Config {
             allowed_networks,
+            data_file: config.data_file,
+            data_persistence_interval: parse_duration(&config.data_persistence_interval)?,
             failed_login_ban: parse_duration(&config.failed_login_ban)?,
             failed_login_max_attempts_per_ip: config.failed_login_max_attempts_per_ip,
             failed_login_max_attempts_per_user: config.failed_login_max_attempts_per_user,
@@ -81,12 +87,14 @@ impl Config {
 #[derive(Deserialize)]
 struct EnvConfig {
     allowed_networks: String,
+    data_file: PathBuf,
+    data_persistence_interval: String,
     failed_login_ban: String,
     failed_login_max_attempts_per_ip: u16,
     failed_login_max_attempts_per_user: u16,
     forward_auth_bind: String,
     forward_auth_port: u16,
-    i18n_file: String,
+    i18n_file: PathBuf,
     i18n_language: String,
     ip_session_max_inactivity: String,
     knock_cookie_domain: String,
@@ -97,7 +105,7 @@ struct EnvConfig {
     login_throttle: String,
     session_max_inactivity: String,
     session_max_lifetime: String,
-    users_file: String,
+    users_file: PathBuf,
 }
 
 fn parse_user(s: &str) -> anyhow::Result<(String, TOTP)> {

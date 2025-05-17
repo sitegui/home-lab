@@ -10,6 +10,7 @@ mod i18n;
 mod login;
 mod network;
 mod parse_duration;
+mod persistence;
 mod string_hash;
 mod throttle;
 
@@ -17,6 +18,7 @@ use crate::config::Config;
 use crate::data::Data;
 use crate::forward_auth::handle_forward_auth;
 use crate::login::{handle_login_action, handle_login_page};
+use crate::persistence::load_and_spawn_persist_loop;
 use crate::throttle::Throttle;
 use axum::Router;
 use axum::routing::get;
@@ -25,7 +27,7 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 
 struct AppState {
-    data: Mutex<Data>,
+    data: Arc<Mutex<Data>>,
     config: Config,
     throttle: Throttle,
 }
@@ -40,8 +42,10 @@ async fn main() -> anyhow::Result<()> {
         TcpListener::bind((config.forward_auth_bind.as_str(), config.forward_auth_port)).await?;
     let login_listener = TcpListener::bind((config.login_bind.as_str(), config.login_port)).await?;
 
+    let data =
+        load_and_spawn_persist_loop(config.data_file.clone(), config.data_persistence_interval);
     let state = Arc::new(AppState {
-        data: Mutex::new(Data::default()),
+        data,
         config,
         throttle: Throttle::default(),
     });
