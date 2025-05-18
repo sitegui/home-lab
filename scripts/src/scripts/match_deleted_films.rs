@@ -212,11 +212,11 @@ fn episode(text: &str) -> Option<(u8, u8)> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Match {
-    target: String,
-    source: Option<String>,
-    distance: Option<u32>,
-    done: Option<bool>,
+pub struct Match {
+    pub target: String,
+    pub source: Option<String>,
+    pub distance: Option<u32>,
+    pub done: Option<bool>,
 }
 
 fn distance(source: &SourceFile, target: &TargetFile) -> u32 {

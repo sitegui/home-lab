@@ -1,5 +1,6 @@
 pub mod backup;
 pub mod compile_nextcloud_units;
+pub mod copy_deleted_films;
 pub mod detect_duplicates;
 pub mod detect_films;
 pub mod generate_totp_secret;

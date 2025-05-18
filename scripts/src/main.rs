@@ -6,6 +6,7 @@ mod scripts;
 
 use crate::scripts::backup::backup;
 use crate::scripts::compile_nextcloud_units::compile_nextcloud_units;
+use crate::scripts::copy_deleted_films::copy_deleted_films;
 use crate::scripts::detect_duplicates::detect_duplicates;
 use crate::scripts::detect_films::detect_films;
 use crate::scripts::generate_totp_secret::generate_totp_secret;
@@ -90,8 +91,7 @@ enum Cli {
     /// Print a secret (in base 32) for TOTP
     GenerateTotpSecret,
     /// I've removed the movies that were already organized on the server. This command will try
-    ///
-    /// rsync's verbose output.
+    /// to use rsync's verbose output to find where the files were in the original disks.
     MatchDeletedFilms {
         #[clap(long)]
         rsync_log: PathBuf,
@@ -101,6 +101,13 @@ enum Cli {
         already_matched: Option<PathBuf>,
         #[clap(long)]
         output: PathBuf,
+    },
+    /// Copy over the files from the disks.
+    CopyDeletedFilms {
+        #[clap(long)]
+        matches: PathBuf,
+        #[clap(long)]
+        prefix: String,
     },
 }
 
@@ -137,6 +144,7 @@ fn main() -> anyhow::Result<()> {
             already_matched,
             output,
         } => match_deleted_films(rsync_log, sources, already_matched, output)?,
+        Cli::CopyDeletedFilms { matches, prefix } => copy_deleted_films(matches, prefix)?,
     }
 
     tracing::info!("Done");
