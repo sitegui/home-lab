@@ -6,6 +6,7 @@ pub mod generate_totp_secret;
 pub mod hash_files;
 pub mod install_sudo_scripts;
 pub mod install_user_units;
+pub mod match_deleted_films;
 pub mod monitor_host;
 pub mod move_films;
 pub mod patch_takeout_exif;

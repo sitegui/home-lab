@@ -12,6 +12,7 @@ use crate::scripts::generate_totp_secret::generate_totp_secret;
 use crate::scripts::hash_files::hash_files;
 use crate::scripts::install_sudo_scripts::install_sudo_scripts;
 use crate::scripts::install_user_units::install_user_units;
+use crate::scripts::match_deleted_films::match_deleted_films;
 use crate::scripts::monitor_host::monitor_host;
 use crate::scripts::move_films::move_films;
 use crate::scripts::patch_takeout_exif::patch_takeout_exif;
@@ -88,6 +89,19 @@ enum Cli {
     },
     /// Print a secret (in base 32) for TOTP
     GenerateTotpSecret,
+    /// I've removed the movies that were already organized on the server. This command will try
+    ///
+    /// rsync's verbose output.
+    MatchDeletedFilms {
+        #[clap(long)]
+        rsync_log: PathBuf,
+        #[clap(long = "source")]
+        sources: Vec<PathBuf>,
+        #[clap(long)]
+        already_matched: Option<PathBuf>,
+        #[clap(long)]
+        output: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -117,6 +131,12 @@ fn main() -> anyhow::Result<()> {
         } => monitor_host(host, output, interval_seconds)?,
         Cli::PatchTakeoutExif { input } => patch_takeout_exif(input)?,
         Cli::GenerateTotpSecret => generate_totp_secret()?,
+        Cli::MatchDeletedFilms {
+            rsync_log,
+            sources,
+            already_matched,
+            output,
+        } => match_deleted_films(rsync_log, sources, already_matched, output)?,
     }
 
     tracing::info!("Done");

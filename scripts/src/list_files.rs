@@ -1,9 +1,14 @@
+use anyhow::Context;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn list_files(path: impl AsRef<Path>) -> anyhow::Result<Vec<PathBuf>> {
+    let path = path.as_ref();
+
     let mut files = vec![];
-    collect_files(path.as_ref(), &mut files)?;
+    collect_files(path, &mut files)
+        .with_context(|| format!("failed to list files in {}", path.display()))?;
+
     Ok(files)
 }
 
