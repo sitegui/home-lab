@@ -47,6 +47,10 @@ fn copy_files(name: &'static str, pairs: Vec<(String, String)>) {
 }
 
 fn copy_file(from: &str, to: &str) -> anyhow::Result<()> {
+    if let Some(parent) = Path::new(to).parent() {
+        fs::create_dir_all(parent)?;
+    }
+
     // Skip files already copied
     let from_meta = Some(Path::new(from).metadata()?.len());
     let to_meta = match Path::new(to).metadata() {
