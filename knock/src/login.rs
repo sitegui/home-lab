@@ -39,12 +39,18 @@ pub async fn handle_login_action(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     cookies: CookieJar,
-    Form(form): Form<LoginPageForm>,
+    Form(LoginPageForm {
+        callback,
+        username,
+        token,
+    }): Form<LoginPageForm>,
 ) -> Response {
     // TODO: validate callback
 
     let config = &state.config;
     state.throttle.wait(config.login_throttle).await;
+
+    let username = username.trim().to_string();
 
     let client_ip = unwrap_or_403!(read_client_ip(&headers));
     let now = Utc::now();
@@ -58,7 +64,7 @@ pub async fn handle_login_action(
         );
         let user_attempt = data
             .users
-            .entry(form.username.clone())
+            .entry(username.clone())
             .or_default()
             .ban_timer
             .attempt(
@@ -71,19 +77,19 @@ pub async fn handle_login_action(
             tracing::info!(
                 "FAILED: too many failed attempts for ip {} or user {}",
                 client_ip,
-                form.username
+                username
             );
             return StatusCode::UNAUTHORIZED.into_response();
         };
 
-        let Some(totps) = config.totps_by_user.get(&form.username) else {
+        let Some(totps) = config.totps_by_user.get(&username) else {
             tracing::info!("FAILED: unknown user");
             return StatusCode::UNAUTHORIZED.into_response();
         };
 
-        if !unwrap_or_500!(check_token(totps, &form.token)) {
+        if !unwrap_or_500!(check_token(totps, &token)) {
             tracing::info!("FAILED: invalid token");
-            return render_login_page(config, &form.callback);
+            return render_login_page(config, &callback);
         }
 
         ip_attempt.report_success();
@@ -101,7 +107,7 @@ pub async fn handle_login_action(
         data.knock_sessions.insert(
             session_hash,
             Session {
-                user_name: form.username.clone(),
+                user_name: username.clone(),
                 login_ip: client_ip,
                 timer: AliveTimer::new(now),
             },
@@ -121,8 +127,8 @@ pub async fn handle_login_action(
         .http_only(true);
     let cookies = cookies.add(session_cookie);
 
-    tracing::info!("SUCCESS: {} login at {}", form.username, client_ip);
-    (cookies, Redirect::temporary(&form.callback)).into_response()
+    tracing::info!("SUCCESS: {} login at {}", username, client_ip);
+    (cookies, Redirect::temporary(&callback)).into_response()
 }
 
 fn render_login_page(config: &Config, callback: &str) -> Response {
