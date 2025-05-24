@@ -556,6 +556,7 @@ dependencies = [
  "itertools",
  "regex",
  "serde",
+ "serde_json",
  "serde_yml",
  "tracing",
  "tracing-subscriber",
