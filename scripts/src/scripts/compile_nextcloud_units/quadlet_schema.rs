@@ -24,6 +24,7 @@ pub struct Service {
 pub struct Container {
     pub container_name: String,
     pub image: String,
+    pub auto_update: String,
     pub user_ns: String,
     pub run_init: bool,
     pub health_start_period: String,
@@ -88,6 +89,7 @@ impl Display for Container {
         writeln!(f, "[Container]")?;
         writeln!(f, "ContainerName = {}", self.container_name)?;
         writeln!(f, "Image = {}", self.image)?;
+        writeln!(f, "AutoUpdate = {}", self.auto_update)?;
         writeln!(f, "UserNS = {}", self.user_ns)?;
         writeln!(f, "RunInit = {}", self.run_init)?;
         writeln!(f, "HealthStartPeriod = {}", self.health_start_period)?;

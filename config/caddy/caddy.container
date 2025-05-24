@@ -5,7 +5,9 @@ Restart = always
 RestartSec = 10
 
 [Container]
-Image = docker.io/library/caddy:2.9
+ContainerName = caddy
+Image = docker.io/library/caddy:2
+AutoUpdate = local
 Notify = true
 Volume = %h/home-lab/config/caddy/Caddyfile:/etc/caddy/Caddyfile
 Volume = %h/bare/caddy/data:/data

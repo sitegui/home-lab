@@ -7,7 +7,8 @@ RestartSec = 10
 
 [Container]
 ContainerName = jellyfin
-Image = docker.io/jellyfin/jellyfin:10.10
+Image = docker.io/jellyfin/jellyfin:10
+AutoUpdate = local
 UserNS = keep-id
 Volume = %h/protected/jellyfin/config:/config
 Volume = %h/protected/jellyfin/cache:/cache

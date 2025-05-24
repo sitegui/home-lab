@@ -7,6 +7,7 @@ RestartSec = 10
 [Container]
 ContainerName = knock
 Image = localhost/knock
+AutoUpdate = local
 UserNS = keep-id
 Volume = %h/bare/knock/secrets:/secrets
 Environment = ALLOWED_NETWORKS=192.168.1.0/24
