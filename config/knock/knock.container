@@ -16,7 +16,7 @@ Environment = I18N_LANGUAGE=fr
 Environment = KNOCK_COOKIE_DOMAIN=sitegui.dev
 Environment = LOGIN_BIND=0.0.0.0
 Environment = LOGIN_HOSTNAME=https://knock.sitegui.dev
-Environment = RUST_LOG=DEBUG
+Environment = RUST_LOG=INFO
 Network = caddy-knock.network
 
 [Install]
