@@ -9,6 +9,7 @@ use crate::scripts::compile_nextcloud_units::compile_nextcloud_units;
 use crate::scripts::install_sudo_scripts::install_sudo_scripts;
 use crate::scripts::install_user_units::install_user_units;
 use crate::scripts::unlock::unlock;
+use crate::scripts::update::{UpdateKind, update};
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -16,6 +17,7 @@ use std::path::PathBuf;
 enum Cli {
     /// Unlock the internal disk and start up the other services
     Unlock,
+    /// Run the backup, copying local files into one of the backup disks
     Backup,
     /// Copy all sudo scripts to ~/sudo-scripts and edit the sudoers file to enable running them
     InstallSudoScripts,
@@ -40,6 +42,8 @@ enum Cli {
         #[clap(long, value_delimiter = ',')]
         profiles: Vec<String>,
     },
+    /// Update the system
+    Update { kind: UpdateKind },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -56,6 +60,7 @@ fn main() -> anyhow::Result<()> {
             volumes_dir,
             profiles,
         } => compile_nextcloud_units(input_secrets, output_secrets_dir, volumes_dir, profiles)?,
+        Cli::Update { kind } => update(kind)?,
     }
 
     tracing::info!("Done");
