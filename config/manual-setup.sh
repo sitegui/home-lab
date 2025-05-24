@@ -176,3 +176,18 @@ cargo run -- compile-next-cloud-units \
   --volumes-dir "$HOME/protected/nextcloud/volumes" \
   --profiles collabora,imaginary,fulltextsearch
 )
+
+###
+### Updates
+###
+(
+# Configure the default daily updates to only consider security updates
+sudo tee /etc/apt/apt.conf.d/99auto-upgrades-sitegui << 'EOF'
+#clear Unattended-Upgrade::Allowed-Origins;
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+Unattended-Upgrade::Allowed-Origins {
+	"${distro_id}:${distro_codename}-security";
+}
+EOF
+)
