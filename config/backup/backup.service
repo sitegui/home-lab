@@ -3,7 +3,7 @@ Description = Backup
 
 [Service]
 WorkingDirectory = %h/home-lab
-ExecStart = %h/home-lab/target/release/scripts backup
+ExecStart = cargo run --release -- backup
 Restart = on-failure
 RestartSec = 300
 

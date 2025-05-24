@@ -170,7 +170,7 @@ EOF
 chmod 600 secrets.conf
 
 cd "$HOME/home-lab"
-cargo run -- compile-next-cloud-units \
+cargo run -- compile-nextcloud-units \
   --input-secrets "$HOME/protected/nextcloud/secrets.conf" \
   --output-secrets-dir "$HOME/protected/nextcloud/secrets" \
   --volumes-dir "$HOME/protected/nextcloud/volumes" \
