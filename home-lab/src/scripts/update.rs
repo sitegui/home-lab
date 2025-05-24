@@ -71,11 +71,17 @@ fn update_podman_images() -> anyhow::Result<()> {
     }
 
     for image in image_names {
+        if image.starts_with("localhost/") {
+            continue;
+        }
+
         let new_image_id = Child::new("podman")
             .args(["pull", "--quiet", &image])
             .capture_stdout()
             .run()?
-            .stdout()?;
+            .stdout()?
+            .trim()
+            .to_string();
 
         tracing::info!("Pulled image {}@{}", image, new_image_id);
     }
