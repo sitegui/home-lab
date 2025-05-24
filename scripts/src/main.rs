@@ -14,6 +14,7 @@ use crate::scripts::hash_files::hash_files;
 use crate::scripts::install_sudo_scripts::install_sudo_scripts;
 use crate::scripts::install_user_units::install_user_units;
 use crate::scripts::match_deleted_films::match_deleted_films;
+use crate::scripts::merge_contacts::merge_contacts;
 use crate::scripts::monitor_host::monitor_host;
 use crate::scripts::move_films::move_films;
 use crate::scripts::patch_takeout_exif::patch_takeout_exif;
@@ -109,6 +110,12 @@ enum Cli {
         #[clap(long)]
         prefix: String,
     },
+    /// Merge and deduplicate contacts from VCF files
+    MergeContacts {
+        #[clap(long)]
+        output: PathBuf,
+        inputs: Vec<PathBuf>,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -145,6 +152,7 @@ fn main() -> anyhow::Result<()> {
             output,
         } => match_deleted_films(rsync_log, sources, already_matched, output)?,
         Cli::CopyDeletedFilms { matches, prefix } => copy_deleted_films(matches, prefix)?,
+        Cli::MergeContacts { inputs, output } => merge_contacts(inputs, output)?,
     }
 
     tracing::info!("Done");
