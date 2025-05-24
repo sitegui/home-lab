@@ -192,6 +192,6 @@ EOF
 
 sudo tee /etc/apt/apt.conf.d/99sitegui-reboot << 'EOF'
 Unattended-Upgrade::Automatic-Reboot "true";
-Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+Unattended-Upgrade::Automatic-Reboot-Time "05:00";
 EOF
 )

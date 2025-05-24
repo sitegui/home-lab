@@ -1,0 +1,9 @@
+[Unit]
+Description = Update system packages
+
+[Timer]
+# First Tuesday of the month
+OnCalendar = Tue *-*-1..7 04:15:00
+
+[Install]
+WantedBy = timers.target

@@ -1,0 +1,9 @@
+[Unit]
+Description = Update podman images
+
+[Timer]
+# Second Tuesday of the month
+OnCalendar = Tue *-*-8..14 04:15:00
+
+[Install]
+WantedBy = timers.target

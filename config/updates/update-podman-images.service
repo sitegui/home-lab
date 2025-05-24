@@ -1,0 +1,10 @@
+[Unit]
+Description = Update podman images
+
+[Service]
+WorkingDirectory = %h/home-lab
+ExecStart = %h/home-lab/target/release/home-lab update podman-images
+Restart = no
+
+[Install]
+WantedBy = default.target

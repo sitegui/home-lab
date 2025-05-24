@@ -1,0 +1,10 @@
+[Unit]
+Description = Update system packages for security
+
+[Service]
+WorkingDirectory = %h/home-lab
+ExecStart = %h/home-lab/target/release/home-lab update system-packages-for-security
+Restart = no
+
+[Install]
+WantedBy = default.target

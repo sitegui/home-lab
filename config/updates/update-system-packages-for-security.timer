@@ -1,0 +1,9 @@
+[Unit]
+Description = Update system packages for security
+
+[Timer]
+# Daily
+OnCalendar = *-*-* 04:00:00
+
+[Install]
+WantedBy = timers.target
