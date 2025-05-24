@@ -181,13 +181,17 @@ cargo run -- compile-next-cloud-units \
 ### Updates
 ###
 (
-# Configure the default daily updates to only consider security updates
-sudo tee /etc/apt/apt.conf.d/99auto-upgrades-sitegui << 'EOF'
+# Configure the default daily updates to only consider security updates and to restart the machine if needed.
+
+sudo tee /etc/apt/apt.conf.d/99sitegui-security-only << 'EOF'
 #clear Unattended-Upgrade::Allowed-Origins;
-Unattended-Upgrade::Automatic-Reboot "true";
-Unattended-Upgrade::Automatic-Reboot-Time "03:00";
 Unattended-Upgrade::Allowed-Origins {
 	"${distro_id}:${distro_codename}-security";
 }
+EOF
+
+sudo tee /etc/apt/apt.conf.d/99sitegui-reboot << 'EOF'
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "03:00";
 EOF
 )
