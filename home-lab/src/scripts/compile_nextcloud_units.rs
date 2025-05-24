@@ -168,6 +168,7 @@ fn compile_service(
     let container = Container {
         container_name: service_name.to_string(),
         image: encoder.encode_public(&service.image)?,
+        pull: "never".to_string(),
         auto_update: "local".to_string(),
         user_ns,
         run_init: service.init,
