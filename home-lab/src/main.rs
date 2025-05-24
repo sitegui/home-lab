@@ -7,7 +7,7 @@ mod scripts;
 use crate::scripts::backup::backup;
 use crate::scripts::compile_nextcloud_units::compile_nextcloud_units;
 use crate::scripts::install_sudo_scripts::install_sudo_scripts;
-use crate::scripts::install_user_units::install_user_units;
+use crate::scripts::install_units::install_units;
 use crate::scripts::unlock::unlock;
 use crate::scripts::update::{UpdateKind, update};
 use clap::Parser;
@@ -23,7 +23,7 @@ enum Cli {
     InstallSudoScripts,
     /// Copy all systemd unit files to the user folder, enable them and restart the impacted
     /// services.
-    InstallUserUnits {
+    InstallUnits {
         /// Force copying and restarting the services even when the contents are the same
         #[clap(long)]
         force: bool,
@@ -53,7 +53,7 @@ fn main() -> anyhow::Result<()> {
         Cli::Unlock => unlock()?,
         Cli::Backup => backup()?,
         Cli::InstallSudoScripts => install_sudo_scripts()?,
-        Cli::InstallUserUnits { force, path } => install_user_units(force, path)?,
+        Cli::InstallUnits { force, path } => install_units(force, path)?,
         Cli::CompileNextcloudUnits {
             input_secrets,
             output_secrets_dir,
