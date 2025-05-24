@@ -50,7 +50,6 @@ impl Child {
         self
     }
 
-    #[allow(dead_code)]
     pub fn stdin(mut self, stdin: String) -> Self {
         self.stdin = Some(stdin);
         self

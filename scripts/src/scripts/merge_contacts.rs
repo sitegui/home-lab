@@ -1,10 +1,9 @@
 use anyhow::{Context, ensure};
 use itertools::Itertools;
 use regex::Regex;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 use std::fmt::{Display, Formatter};
 use std::fs;
-use std::fs::File;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
@@ -47,6 +46,7 @@ pub fn merge_contacts(inputs: Vec<PathBuf>, output: PathBuf) -> anyhow::Result<(
             (tel_suffix, card)
         })
         .fold(HashMap::new(), |mut map, (tel_suffix, card)| {
+            #[allow(clippy::unwrap_or_default)]
             map.entry(tel_suffix)
                 .or_insert_with(BTreeSet::new)
                 .insert(card);
@@ -101,6 +101,7 @@ fn parse_vcf(data: &str) -> anyhow::Result<Vec<VCard>> {
 
     let mut cards = Vec::new();
 
+    #[allow(clippy::enum_variant_names)]
     enum State {
         BeforeBegin,
         BeforeVersion,
