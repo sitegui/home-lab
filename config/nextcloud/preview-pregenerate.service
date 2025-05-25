@@ -1,0 +1,9 @@
+[Unit]
+Description = Nextcloud preview pregenerate
+
+[Service]
+ExecStart = /usr/bin/podman exec --user www-data -it nextcloud-aio-nextcloud php occ preview:pre-generate --verbose
+Restart = no
+
+[Install]
+WantedBy = default.target

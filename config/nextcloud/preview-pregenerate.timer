@@ -1,0 +1,9 @@
+[Unit]
+Description = Nextcloud preview pregenerate
+
+[Timer]
+# Daily
+OnCalendar = *-*-* 02:00:00
+
+[Install]
+WantedBy = timers.target
