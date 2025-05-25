@@ -5,6 +5,7 @@ COPY Cargo.lock Cargo.toml ./
 COPY home-lab/Cargo.toml home-lab/
 COPY knock/Cargo.toml knock/
 COPY scripts/Cargo.toml scripts/
+RUN mkdir home-lab/src knock/src scripts/src
 RUN touch home-lab/src/main.rs knock/src/main.rs scripts/src/main.rs
 RUN cargo build -p knock --release || true
 COPY knock knock
