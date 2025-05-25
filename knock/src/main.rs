@@ -5,21 +5,21 @@ mod ban_timer;
 mod common;
 mod config;
 mod data;
-mod forward_auth;
 mod i18n;
-mod login;
 mod network;
 mod parse_duration;
 mod persistence;
+mod servers;
 mod string_hash;
 mod terminate;
 mod throttle;
 
 use crate::config::Config;
 use crate::data::Data;
-use crate::forward_auth::handle_forward_auth;
-use crate::login::{handle_login_action, handle_login_page};
 use crate::persistence::load_and_spawn_persist_loop;
+use crate::servers::forward_auth::handle_forward_auth;
+use crate::servers::login::{handle_login_action, handle_login_page};
+use crate::servers::portal::handle_portal_page;
 use crate::terminate::TERMINATE;
 use crate::throttle::Throttle;
 use axum::Router;
@@ -43,6 +43,8 @@ async fn main() -> anyhow::Result<()> {
     let forward_auth_listener =
         TcpListener::bind((config.forward_auth_bind.as_str(), config.forward_auth_port)).await?;
     let login_listener = TcpListener::bind((config.login_bind.as_str(), config.login_port)).await?;
+    let portal_listener =
+        TcpListener::bind((config.portal_bind.as_str(), config.portal_port)).await?;
 
     let data =
         load_and_spawn_persist_loop(config.data_file.clone(), config.data_persistence_interval);
@@ -67,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
 
     let login_router = Router::new()
         .route("/", get(handle_login_page).post(handle_login_action))
-        .with_state(state);
+        .with_state(state.clone());
     tracing::info!("Login listening on {}", login_listener.local_addr()?);
     let login_server = tokio::spawn(
         axum::serve(login_listener, login_router)
@@ -75,8 +77,19 @@ async fn main() -> anyhow::Result<()> {
             .into_future(),
     );
 
+    let portal_router = Router::new()
+        .route("/", get(handle_portal_page))
+        .with_state(state);
+    tracing::info!("Login listening on {}", portal_listener.local_addr()?);
+    let portal_server = tokio::spawn(
+        axum::serve(portal_listener, portal_router)
+            .with_graceful_shutdown(TERMINATE.wait())
+            .into_future(),
+    );
+
     forward_auth_server.await.unwrap()?;
     login_server.await.unwrap()?;
+    portal_server.await.unwrap()?;
 
     Ok(())
 }

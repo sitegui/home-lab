@@ -135,7 +135,7 @@ fn render_login_page(config: &Config, callback: &str) -> Response {
     let login_html = unwrap_or_500!(
         config
             .i18n
-            .translate(&config.i18n_language, include_str!("../web/login.html"))
+            .translate(&config.i18n_language, include_str!("../../web/login.html"))
     );
 
     let login_html = login_html.replace("{{callback}}", &escape_html(callback));

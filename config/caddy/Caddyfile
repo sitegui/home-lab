@@ -58,17 +58,17 @@ ldap.sitegui.dev:8080 {
     reverse_proxy lldap:17170
 }
 
-bugabuga.sitegui.dev {
+login.sitegui.dev {
     import external_sockets
     import logging
-    import auth
 
-    respond "Hello, world!"
+    reverse_proxy knock:8081
 }
 
 knock.sitegui.dev {
     import external_sockets
     import logging
+    import auth
 
-    reverse_proxy knock:8081
+    reverse_proxy knock:8082
 }
