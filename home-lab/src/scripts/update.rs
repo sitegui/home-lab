@@ -93,9 +93,10 @@ fn update_podman_images() -> anyhow::Result<()> {
 
 fn update_system_packages(script_name: &str) -> anyhow::Result<()> {
     let home = home()?;
-    tracing::info!(
-        "You can check the logs with `sudo journalctl -u apt-daily -r` and `less /var/log/unattended-upgrades/unattended-upgrades.log`"
-    );
+    tracing::info!("You can check the logs with:");
+    tracing::info!("sudo journalctl -u apt-daily -r");
+    tracing::info!("sudo journalctl -u apt-daily-upgrade -r");
+    tracing::info!("less /var/log/unattended-upgrades/unattended-upgrades.log");
     Child::new("sudo")
         .arg(home.join("sudo-scripts").join(script_name))
         .run()?;
