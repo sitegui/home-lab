@@ -4,6 +4,7 @@ Description = Update system packages
 [Timer]
 # First Tuesday of the month
 OnCalendar = Tue *-*-1..7 04:15:00
+RandomizedDelaySec = 10m
 
 [Install]
 WantedBy = timers.target

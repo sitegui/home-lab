@@ -4,6 +4,7 @@ Description = Update podman images
 [Timer]
 # Second Tuesday of the month
 OnCalendar = Tue *-*-8..14 04:15:00
+RandomizedDelaySec = 10m
 
 [Install]
 WantedBy = timers.target

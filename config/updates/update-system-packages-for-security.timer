@@ -4,6 +4,7 @@ Description = Update system packages for security
 [Timer]
 # Daily
 OnCalendar = *-*-* 04:00:00
+RandomizedDelaySec = 10m
 
 [Install]
 WantedBy = timers.target
