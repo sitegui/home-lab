@@ -34,9 +34,13 @@ impl I18n {
                             bail!("unmatched [[");
                         }
                         Some((key, new_rest)) => {
-                            let term = terms
-                                .get(key)
-                                .with_context(|| format!("unknown term: {}", key))?;
+                            let term = match terms.get(key) {
+                                Some(term) => term,
+                                None => {
+                                    tracing::warn!("unknown term: {}", key);
+                                    key
+                                }
+                            };
                             translated += term;
                             rest = new_rest;
                         }
