@@ -2,8 +2,10 @@ FROM docker.io/library/rust:1.85.1-slim AS builder
 
 WORKDIR /app
 COPY Cargo.lock Cargo.toml ./
+COPY home-lab/Cargo.toml home-lab/
 COPY knock/Cargo.toml knock/
 COPY scripts/Cargo.toml scripts/
+COPY home-lab/src/main.rs home-lab/src/
 COPY knock/src/main.rs knock/src/
 COPY scripts/src/main.rs scripts/src/
 RUN cargo build -p knock --release || true
