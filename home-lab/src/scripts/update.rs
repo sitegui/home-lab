@@ -8,30 +8,30 @@ use std::collections::{BTreeMap, BTreeSet};
 #[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum UpdateKind {
     /// Update podman images, pulling them. This may restart podman containers
-    PodmanImages,
+    Images,
     /// Update packages with apt-get. This may reboot the system
-    SystemPackages,
+    Packages,
     /// Update only security packages with apt-get. This may reboot the system
-    SystemPackagesForSecurity,
+    SecurityPackages,
 }
 
 pub fn update(kind: UpdateKind) -> anyhow::Result<()> {
     match kind {
-        UpdateKind::PodmanImages => {
-            update_podman_images()?;
+        UpdateKind::Images => {
+            update_images()?;
         }
-        UpdateKind::SystemPackages => {
-            update_system_packages("update-system-packages.sh")?;
+        UpdateKind::Packages => {
+            update_packages("update-packages.sh")?;
         }
-        UpdateKind::SystemPackagesForSecurity => {
-            update_system_packages("update-system-packages-for-security.sh")?;
+        UpdateKind::SecurityPackages => {
+            update_packages("update-security-packages.sh")?;
         }
     }
 
     Ok(())
 }
 
-fn update_podman_images() -> anyhow::Result<()> {
+fn update_images() -> anyhow::Result<()> {
     #[derive(Debug, Deserialize)]
     struct Container {
         #[serde(rename = "Names")]
@@ -91,7 +91,7 @@ fn update_podman_images() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn update_system_packages(script_name: &str) -> anyhow::Result<()> {
+fn update_packages(script_name: &str) -> anyhow::Result<()> {
     let home = home()?;
     tracing::info!("You can check the logs with:");
     tracing::info!("sudo journalctl -u apt-daily -r");

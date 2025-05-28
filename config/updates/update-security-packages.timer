@@ -1,5 +1,5 @@
 [Unit]
-Description = Update system packages for security
+Description = Update security packages
 
 [Timer]
 # Daily

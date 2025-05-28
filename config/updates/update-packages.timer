@@ -1,5 +1,5 @@
 [Unit]
-Description = Update system packages
+Description = Update packages
 
 [Timer]
 # First Tuesday of the month
