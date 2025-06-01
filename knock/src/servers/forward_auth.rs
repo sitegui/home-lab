@@ -8,8 +8,11 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use chrono::Utc;
+use serde::Serialize;
+use std::collections::BTreeMap;
 use std::net::IpAddr;
 use std::sync::Arc;
+use tokio::io::AsyncWriteExt;
 
 pub async fn handle_forward_auth(
     State(state): State<Arc<AppState>>,
@@ -22,6 +25,35 @@ pub async fn handle_forward_auth(
     let uri = unwrap_or_403!(read_header(&headers, "x-forwarded-uri"));
     let proto = unwrap_or_403!(read_header(&headers, "x-forwarded-proto"));
     let host = unwrap_or_403!(read_header(&headers, "x-forwarded-host"));
+
+    #[derive(Serialize)]
+    struct Log<'a> {
+        client_ip: IpAddr,
+        uri: &'a str,
+        proto: &'a str,
+        host: &'a str,
+        headers: BTreeMap<&'a str, &'a str>,
+    }
+
+    let log = Log {
+        client_ip,
+        uri,
+        proto,
+        host,
+        headers: headers
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.to_str().unwrap_or("")))
+            .collect(),
+    };
+    let log_str = unwrap_or_500!(serde_json::to_string(&log));
+    unwrap_or_500!(
+        state
+            .forward_auth_log
+            .lock()
+            .await
+            .write_all(log_str.as_bytes())
+            .await
+    );
 
     let callback = format!("{}://{}{}", proto, host, uri);
     if tracing::enabled!(tracing::Level::DEBUG) {

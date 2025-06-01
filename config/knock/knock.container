@@ -19,7 +19,7 @@ Environment = LOGIN_BIND=0.0.0.0
 Environment = LOGIN_HOSTNAME=https://login.sitegui.dev
 Environment = PORTAL_BIND=0.0.0.0
 Environment = RUST_LOG=INFO
-Environment = SESSION_MAX_INACTIVITY=2d
+Environment = SESSION_MAX_INACTIVITY=3d
 Environment = SESSION_MAX_LIFETIME=30d
 Network = caddy-knock.network
 
