@@ -55,6 +55,7 @@ async fn main() -> anyhow::Result<()> {
     let forward_auth_log = AsyncMutex::new(BufWriter::new(
         OpenOptions::new()
             .append(true)
+            .create(true)
             .open("/secrets/forward_auth.jsonl")
             .await?,
     ));
