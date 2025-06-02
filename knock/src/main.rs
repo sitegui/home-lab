@@ -1,6 +1,7 @@
 #[macro_use]
 mod macros;
 mod alive_timer;
+mod audit;
 mod ban_timer;
 mod common;
 mod config;
@@ -14,6 +15,7 @@ mod string_hash;
 mod terminate;
 mod throttle;
 
+use crate::audit::Audit;
 use crate::config::Config;
 use crate::data::Data;
 use crate::persistence::load_and_spawn_persist_loop;
@@ -35,7 +37,8 @@ struct AppState {
     data: Arc<Mutex<Data>>,
     config: Config,
     throttle: Throttle,
-    forward_auth_log: AsyncMutex<BufWriter<File>>,
+    forward_auth_log: Option<AsyncMutex<BufWriter<File>>>,
+    audit: Audit,
 }
 
 #[tokio::main]

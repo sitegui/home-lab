@@ -13,8 +13,8 @@ RUN cargo build -p knock --release
 
 FROM docker.io/library/debian:bookworm-slim
 WORKDIR /app
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/knock /app/knock
 COPY knock/default.env .
 COPY knock/web/languages.json .
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 CMD ["./knock"]

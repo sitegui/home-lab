@@ -96,15 +96,10 @@ pub async fn handle_login_action(
         user_attempt.report_success();
     }
 
-    let mut random_bytes = [0u8; 16];
-    unwrap_or_500!(getrandom::fill(&mut random_bytes));
-    let session = hex::encode(random_bytes);
-    let session_hash = StringHash::new(&session);
-
     {
         let mut data = state.data.lock();
 
-        data.knock_sessions.insert(
+        data.sessions.insert(
             session_hash,
             Session {
                 user_name: username.clone(),
