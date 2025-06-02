@@ -84,7 +84,8 @@ fn append_token_to_url(url: &str, token: &str) -> anyhow::Result<String> {
     let parts = url.into_parts();
     let path_and_query = parts.path_and_query.context("missing path")?;
     let new_path_and_query = match path_and_query.query() {
-        None | Some("") => format!("{}_knock={}", path_and_query, token),
+        None => format!("{}?_knock={}", path_and_query, token),
+        Some("") => format!("{}_knock={}", path_and_query, token),
         Some(_) => format!("{}&_knock={}", path_and_query, token),
     };
 
