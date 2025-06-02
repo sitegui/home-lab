@@ -23,6 +23,12 @@ impl FileAppender {
         Ok(())
     }
 
+    pub async fn soft_flush(&self) -> anyhow::Result<()> {
+        let mut writer = self.0.lock().await;
+        writer.flush().await?;
+        Ok(())
+    }
+
     pub async fn flush(&self) -> anyhow::Result<()> {
         let mut writer = self.0.lock().await;
         writer.flush().await?;

@@ -59,6 +59,7 @@ impl Audit {
             while let Some(log) = rx.recv().await {
                 appender.append(log.as_bytes()).await?;
                 appender.append(b"\n").await?;
+                appender.soft_flush().await?;
             }
 
             appender.flush().await
