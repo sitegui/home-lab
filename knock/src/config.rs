@@ -1,3 +1,4 @@
+use crate::data::UserName;
 use crate::i18n::I18n;
 use crate::network::Network;
 use crate::parse_duration::parse_duration;
@@ -33,7 +34,7 @@ pub struct Config {
     pub login_throttle: TimeDelta,
     pub portal_bind: String,
     pub portal_port: u16,
-    pub totps_by_user: BTreeMap<String, Vec<TOTP>>,
+    pub totps_by_user: BTreeMap<UserName, Vec<TOTP>>,
 }
 
 impl Config {
@@ -120,7 +121,7 @@ struct EnvConfig {
     users_file: PathBuf,
 }
 
-fn parse_user(s: &str) -> anyhow::Result<(String, TOTP)> {
+fn parse_user(s: &str) -> anyhow::Result<(UserName, TOTP)> {
     let (name, secret) = s.split_once(',').context("missing comma")?;
 
     let secret_bytes = Secret::Encoded(secret.trim().to_string())
@@ -134,6 +135,6 @@ fn parse_user(s: &str) -> anyhow::Result<(String, TOTP)> {
     )
     .context("failed to create TOTP instance")?;
 
-    let name = name.trim().to_string();
+    let name = UserName(name.trim().to_string());
     Ok((name, totp))
 }

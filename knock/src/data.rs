@@ -7,6 +7,7 @@ use axum_extra::extract::cookie::Cookie;
 use chrono::{DateTime, TimeDelta, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 
 #[derive(Serialize, Deserialize, Default)]
@@ -50,6 +51,12 @@ pub struct InviteLink {
     pub expires_at: DateTime<Utc>,
 }
 
+impl Display for UserName {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl Data {
     pub fn allow_ip(
         &mut self,
@@ -74,12 +81,27 @@ impl Data {
     pub fn allow_invitee_session(
         &mut self,
         audit: &Audit,
-        invited_by: UserName,
+        invited_by: &UserName,
         session: StringHash,
         expires_at: DateTime<Utc>,
     ) {
         audit.report(AuditEvent::NewInviteeSession {
             invited_by,
+            session,
+            expires_at,
+        });
+        self.sessions.insert(session, Session { expires_at });
+    }
+
+    pub fn allow_login_session(
+        &mut self,
+        audit: &Audit,
+        user: &UserName,
+        session: StringHash,
+        expires_at: DateTime<Utc>,
+    ) {
+        audit.report(AuditEvent::NewLoginSession {
+            user,
             session,
             expires_at,
         });

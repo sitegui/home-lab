@@ -1,16 +1,13 @@
 use crate::AppState;
-use crate::alive_timer::AliveTimer;
 use crate::common::{escape_html, read_client_ip};
 use crate::config::Config;
-use crate::data::{IpSession, Session};
-use crate::string_hash::StringHash;
+use crate::data::{Data, UserName};
 use anyhow::Context;
 use axum::Form;
 use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::CookieJar;
-use axum_extra::extract::cookie::Cookie;
 use chrono::Utc;
 use serde::Deserialize;
 use std::sync::Arc;
@@ -50,7 +47,7 @@ pub async fn handle_login_action(
     let config = &state.config;
     state.throttle.wait(config.login_throttle).await;
 
-    let username = username.trim().to_string();
+    let username = UserName(username.trim().to_string());
 
     let client_ip = unwrap_or_403!(read_client_ip(&headers));
     let now = Utc::now();
@@ -96,31 +93,29 @@ pub async fn handle_login_action(
         user_attempt.report_success();
     }
 
+    let (session_hash, cookie) = unwrap_or_500!(Data::generate_session(
+        config,
+        config.login_session_expiration
+    ));
+
     {
         let mut data = state.data.lock();
 
-        data.sessions.insert(
+        data.allow_login_session(
+            &state.audit,
+            &username,
             session_hash,
-            Session {
-                user_name: username.clone(),
-                login_ip: client_ip,
-                timer: AliveTimer::new(now),
-            },
+            now + config.login_session_expiration,
         );
-        data.ips.entry(client_ip).or_default().session = Some(IpSession {
-            session: session_hash,
-            last_activity: now,
-        });
+        data.allow_ip(
+            &state.audit,
+            client_ip,
+            session_hash,
+            now + config.ip_session_expiration,
+        );
     }
 
-    let max_age =
-        ::time::Duration::try_from(config.session_max_lifetime.to_std().unwrap()).unwrap();
-    let session_cookie = Cookie::build((config.knock_cookie_name.clone(), session))
-        .domain(config.knock_cookie_domain.clone())
-        .max_age(max_age)
-        .secure(true)
-        .http_only(true);
-    let cookies = cookies.add(session_cookie);
+    let cookies = cookies.add(cookie);
 
     tracing::info!("SUCCESS: {} login at {}", username, client_ip);
     (cookies, Redirect::temporary(&callback)).into_response()

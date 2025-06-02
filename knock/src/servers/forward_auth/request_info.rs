@@ -1,3 +1,4 @@
+use crate::common::{read_client_ip, read_header};
 use crate::config::Config;
 use crate::string_hash::StringHash;
 use anyhow::Context;
@@ -53,10 +54,6 @@ impl RequestInfo {
         &self.uri
     }
 
-    pub fn proto(&self) -> &str {
-        &self.proto
-    }
-
     pub fn host(&self) -> &str {
         &self.host
     }
@@ -68,25 +65,4 @@ impl RequestInfo {
     pub fn callback(&self) -> String {
         format!("{}://{}{}", self.proto, self.host, self.uri)
     }
-}
-
-fn read_header<'a>(headers: &'a HeaderMap, name: &str) -> anyhow::Result<&'a str> {
-    headers
-        .get(name)
-        .with_context(|| format!("missing {}", name))?
-        .to_str()
-        .with_context(|| format!("invalid {}", name))
-}
-
-fn read_client_ip(headers: &HeaderMap) -> anyhow::Result<IpAddr> {
-    let client_ips = read_header(headers, "x-forwarded-for")?;
-
-    let client_ip = client_ips
-        .split_once(',')
-        .map(|(first, _)| first)
-        .unwrap_or(client_ips)
-        .trim();
-    let client_ip: IpAddr = client_ip.parse().context("invalid client ip")?;
-
-    Ok(client_ip)
 }

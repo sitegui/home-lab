@@ -1,11 +1,11 @@
 #[macro_use]
 mod macros;
-mod alive_timer;
 mod audit;
 mod ban_timer;
 mod common;
 mod config;
 mod data;
+mod file_appender;
 mod i18n;
 mod network;
 mod parse_duration;
@@ -20,6 +20,7 @@ use crate::config::Config;
 use crate::data::Data;
 use crate::persistence::load_and_spawn_persist_loop;
 use crate::servers::forward_auth::handle_forward_auth;
+use crate::servers::forward_auth::logger::Logger;
 use crate::servers::login::{handle_login_action, handle_login_page};
 use crate::servers::portal::handle_portal_page;
 use crate::terminate::TERMINATE;
@@ -28,16 +29,13 @@ use axum::Router;
 use axum::routing::get;
 use parking_lot::Mutex;
 use std::sync::Arc;
-use tokio::fs::{File, OpenOptions};
-use tokio::io::{AsyncWriteExt, BufWriter};
 use tokio::net::TcpListener;
-use tokio::sync::Mutex as AsyncMutex;
 
 struct AppState {
     data: Arc<Mutex<Data>>,
     config: Config,
     throttle: Throttle,
-    forward_auth_log: Option<AsyncMutex<BufWriter<File>>>,
+    forward_auth_logger: Option<Logger>,
     audit: Audit,
 }
 
@@ -55,18 +53,19 @@ async fn main() -> anyhow::Result<()> {
 
     let data =
         load_and_spawn_persist_loop(config.data_file.clone(), config.data_persistence_interval);
-    let forward_auth_log = AsyncMutex::new(BufWriter::new(
-        OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open("/secrets/forward_auth.jsonl")
-            .await?,
-    ));
+    let forward_auth_logger = match &config.forward_auth_log_file {
+        None => None,
+        Some(path) => Some(Logger::new(path).await?),
+    };
+
+    let audit = Audit::new(&config.audit_log_file).await?;
+
     let state = Arc::new(AppState {
         data,
         config,
         throttle: Throttle::default(),
-        forward_auth_log,
+        forward_auth_logger,
+        audit,
     });
 
     let forward_auth_router = Router::new()
@@ -106,9 +105,10 @@ async fn main() -> anyhow::Result<()> {
     login_server.await.unwrap()?;
     portal_server.await.unwrap()?;
 
-    let mut forward_auth_log = state.forward_auth_log.lock().await;
-    forward_auth_log.flush().await?;
-    forward_auth_log.get_ref().sync_all().await?;
+    if let Some(logger) = &state.forward_auth_logger {
+        logger.flush().await?;
+    }
+    state.audit.flush().await?;
 
     Ok(())
 }

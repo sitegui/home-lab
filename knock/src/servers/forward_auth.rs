@@ -1,12 +1,11 @@
 mod access_level;
-mod log;
+pub mod logger;
 mod request_info;
 
 use crate::AppState;
 use crate::common::build_login_redirection;
 use crate::data::Data;
 use crate::servers::forward_auth::access_level::AccessLevel;
-use crate::servers::forward_auth::log::log;
 use crate::servers::forward_auth::request_info::RequestInfo;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
@@ -16,15 +15,14 @@ use std::sync::Arc;
 
 pub async fn handle_forward_auth(
     State(state): State<Arc<AppState>>,
-    mut cookies: CookieJar,
+    cookies: CookieJar,
     headers: HeaderMap,
 ) -> Response {
     let config = &state.config;
     let request = unwrap_or_403!(RequestInfo::new(config, &cookies, headers));
 
-    if let Some(forward_auth_log) = &state.forward_auth_log {
-        let mut file = forward_auth_log.lock().await;
-        unwrap_or_500!(log(&mut *file, &request).await);
+    if let Some(logger) = &state.forward_auth_logger {
+        unwrap_or_500!(logger.log(&request).await);
     }
 
     if tracing::enabled!(tracing::Level::DEBUG) {
@@ -68,12 +66,12 @@ pub async fn handle_forward_auth(
             );
             data.allow_invitee_session(
                 &state.audit,
-                invited_by,
+                &invited_by,
                 session_hash,
                 request.arrival() + config.invitee_session_expiration,
             );
 
-            cookies = cookies.add(cookie);
+            let cookies = cookies.add(cookie);
             (cookies, Redirect::temporary(&request.callback())).into_response()
         }
         AccessLevel::Ip | AccessLevel::AllowedNetwork => StatusCode::OK.into_response(),
