@@ -54,6 +54,7 @@ pub async fn handle_forward_auth(
             StatusCode::OK.into_response()
         }
         AccessLevel::InviteLink {
+            link_hash,
             generated_by,
             original_length,
         } => {
@@ -71,6 +72,7 @@ pub async fn handle_forward_auth(
             );
             data.allow_invitee_session(
                 &state.audit,
+                link_hash,
                 generated_by,
                 session_hash,
                 request.arrival() + config.invitee_session_expiration,

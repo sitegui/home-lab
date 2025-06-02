@@ -12,6 +12,7 @@ pub enum AccessLevel {
     Session(StringHash),
     /// Access is ensured by an exact invitation link
     InviteLink {
+        link_hash: StringHash,
         generated_by: StringHash,
         original_length: usize,
     },
@@ -33,9 +34,11 @@ impl AccessLevel {
             }
         }
 
-        if let Some(invite_link) = data.invite_links.get(&StringHash::new(&request.uri())) {
+        let link_hash = StringHash::new(&request.uri());
+        if let Some(invite_link) = data.invite_links.get(&link_hash) {
             if invite_link.expires_at > request.arrival() {
                 return AccessLevel::InviteLink {
+                    link_hash,
                     generated_by: invite_link.generated_by,
                     original_length: invite_link.original_length,
                 };

@@ -80,11 +80,13 @@ impl Data {
     pub fn allow_invitee_session(
         &mut self,
         audit: &Audit,
+        link_hash: StringHash,
         invited_by: StringHash,
         session: StringHash,
         expires_at: DateTime<Utc>,
     ) {
         audit.report(AuditEvent::NewInviteeSession {
+            link_hash,
             invited_by,
             session,
             expires_at,

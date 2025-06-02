@@ -33,8 +33,9 @@ pub enum AuditEvent<'a> {
         expires_at: DateTime<Utc>,
     },
     NewInviteeSession {
-        invited_by: StringHash,
         session: StringHash,
+        link_hash: StringHash,
+        invited_by: StringHash,
         expires_at: DateTime<Utc>,
     },
     NewInviteLink {
@@ -47,6 +48,7 @@ pub enum AuditEvent<'a> {
 #[derive(Serialize)]
 struct Log<'a> {
     datetime: DateTime<Utc>,
+    #[serde(flatten)]
     event: AuditEvent<'a>,
 }
 
