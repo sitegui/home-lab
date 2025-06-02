@@ -1,9 +1,10 @@
 use crate::AppState;
 use crate::servers::forward_auth::request_info::RequestInfo;
 use crate::string_hash::StringHash;
+use serde::Serialize;
 
 /// Represents which kind of access validates this request
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum AccessLevel {
     /// Access is denied
     None,

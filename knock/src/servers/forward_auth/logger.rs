@@ -1,4 +1,5 @@
 use crate::file_appender::FileAppender;
+use crate::servers::forward_auth::access_level::AccessLevel;
 use crate::servers::forward_auth::request_info::RequestInfo;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
@@ -12,6 +13,7 @@ pub struct Logger(FileAppender);
 struct Log<'a> {
     arrival: DateTime<Utc>,
     headers: BTreeMap<&'a str, &'a str>,
+    access_level: &'a AccessLevel,
 }
 
 impl Logger {
@@ -19,7 +21,11 @@ impl Logger {
         Ok(Self(FileAppender::new(path).await?))
     }
 
-    pub async fn log(&self, request: &RequestInfo) -> anyhow::Result<()> {
+    pub async fn log(
+        &self,
+        request: &RequestInfo,
+        access_level: &AccessLevel,
+    ) -> anyhow::Result<()> {
         let headers = request
             .headers()
             .iter()
@@ -29,6 +35,7 @@ impl Logger {
         let log = Log {
             arrival: request.arrival(),
             headers,
+            access_level,
         };
 
         let log_str = serde_json::to_string(&log)?;

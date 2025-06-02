@@ -21,10 +21,6 @@ pub async fn handle_forward_auth(
     let config = &state.config;
     let request = unwrap_or_403!(RequestInfo::new(config, &cookies, headers));
 
-    if let Some(logger) = &state.forward_auth_logger {
-        unwrap_or_500!(logger.log(&request).await);
-    }
-
     if tracing::enabled!(tracing::Level::DEBUG) {
         let callback = request.callback();
         let callback_without_params = match callback.split_once('?') {
@@ -39,6 +35,11 @@ pub async fn handle_forward_auth(
     }
 
     let access_level = AccessLevel::new(&state, &request);
+
+    if let Some(logger) = &state.forward_auth_logger {
+        unwrap_or_500!(logger.log(&request, &access_level).await);
+    }
+
     match access_level {
         AccessLevel::None => build_login_redirection(config, &request.callback()),
         AccessLevel::Session(session) => {
