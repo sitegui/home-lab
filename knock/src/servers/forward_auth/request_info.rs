@@ -50,14 +50,6 @@ impl RequestInfo {
         self.client_ip
     }
 
-    pub fn uri(&self) -> &str {
-        &self.uri
-    }
-
-    pub fn host(&self) -> &str {
-        &self.host
-    }
-
     pub fn session_hash(&self) -> Option<StringHash> {
         self.session_hash
     }

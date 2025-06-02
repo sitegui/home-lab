@@ -33,8 +33,13 @@ pub enum AuditEvent<'a> {
         expires_at: DateTime<Utc>,
     },
     NewInviteeSession {
-        invited_by: &'a UserName,
+        invited_by: StringHash,
         session: StringHash,
+        expires_at: DateTime<Utc>,
+    },
+    NewInviteLink {
+        link_hash: StringHash,
+        generated_by: StringHash,
         expires_at: DateTime<Utc>,
     },
 }

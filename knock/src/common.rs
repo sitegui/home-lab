@@ -1,5 +1,5 @@
 use crate::config::Config;
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect, Response};
 use std::net::IpAddr;
@@ -40,4 +40,11 @@ pub fn escape_html(value: &str) -> String {
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&quot;")
+}
+
+pub fn generate_token() -> anyhow::Result<String> {
+    let mut random_bytes = [0u8; 16];
+    getrandom::fill(&mut random_bytes)
+        .map_err(|error| anyhow!("failed to generate random bytes: {}", error))?;
+    Ok(hex::encode(random_bytes))
 }

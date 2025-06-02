@@ -1,5 +1,4 @@
 use crate::AppState;
-use crate::data::UserName;
 use crate::servers::forward_auth::request_info::RequestInfo;
 use crate::string_hash::StringHash;
 
@@ -11,7 +10,7 @@ pub enum AccessLevel {
     /// Access is ensured by a session cookie, created by an explicit login or an invitation
     Session(StringHash),
     /// Access is ensured by an exact invitation link
-    InviteLink(UserName),
+    InviteLink(StringHash),
     /// Access is ensured by a previously approved IP
     Ip,
     /// Access is ensured by the IP being part of an allowed network
@@ -30,9 +29,9 @@ impl AccessLevel {
             }
         }
 
-        if let Some(invite_link) = data.invite_links.get(&StringHash::new(request.uri())) {
-            if invite_link.host == request.host() && invite_link.expires_at > request.arrival() {
-                return AccessLevel::InviteLink(invite_link.generated_by.clone());
+        if let Some(invite_link) = data.invite_links.get(&StringHash::new(&request.callback())) {
+            if invite_link.expires_at > request.arrival() {
+                return AccessLevel::InviteLink(invite_link.generated_by);
             }
         }
 

@@ -1,8 +1,8 @@
 use crate::audit::{Audit, AuditEvent};
 use crate::ban_timer::BanTimer;
+use crate::common::generate_token;
 use crate::config::Config;
 use crate::string_hash::StringHash;
-use anyhow::anyhow;
 use axum_extra::extract::cookie::Cookie;
 use chrono::{DateTime, TimeDelta, Utc};
 use serde::{Deserialize, Serialize};
@@ -45,9 +45,7 @@ pub struct IpSession {
 
 #[derive(Serialize, Deserialize)]
 pub struct InviteLink {
-    pub host: String,
-    pub generated_by: UserName,
-    pub generated_at: DateTime<Utc>,
+    pub generated_by: StringHash,
     pub expires_at: DateTime<Utc>,
 }
 
@@ -81,7 +79,7 @@ impl Data {
     pub fn allow_invitee_session(
         &mut self,
         audit: &Audit,
-        invited_by: &UserName,
+        invited_by: StringHash,
         session: StringHash,
         expires_at: DateTime<Utc>,
     ) {
@@ -112,10 +110,7 @@ impl Data {
         config: &Config,
         expiration: TimeDelta,
     ) -> anyhow::Result<(StringHash, Cookie<'static>)> {
-        let mut random_bytes = [0u8; 16];
-        getrandom::fill(&mut random_bytes)
-            .map_err(|error| anyhow!("failed to generate random bytes: {}", error))?;
-        let session = hex::encode(random_bytes);
+        let session = generate_token()?;
         let session_hash = StringHash::new(&session);
 
         let max_age = ::time::Duration::try_from(expiration.to_std()?)?;
@@ -127,5 +122,26 @@ impl Data {
             .build();
 
         Ok((session_hash, cookie))
+    }
+
+    pub fn add_invite_link(
+        &mut self,
+        audit: &Audit,
+        link_hash: StringHash,
+        generated_by: StringHash,
+        expires_at: DateTime<Utc>,
+    ) {
+        audit.report(AuditEvent::NewInviteLink {
+            link_hash,
+            generated_by,
+            expires_at,
+        });
+        self.invite_links.insert(
+            link_hash,
+            InviteLink {
+                generated_by,
+                expires_at,
+            },
+        );
     }
 }

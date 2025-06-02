@@ -21,3 +21,9 @@ macro_rules! unwrap_or_403 {
         unwrap_or_answer!(::axum::http::StatusCode::UNAUTHORIZED, $value)
     };
 }
+
+macro_rules! unwrap_or_400 {
+    ($value:expr) => {
+        unwrap_or_answer!(::axum::http::StatusCode::BAD_REQUEST, $value)
+    };
+}

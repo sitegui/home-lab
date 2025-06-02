@@ -1,6 +1,6 @@
-mod access_level;
+pub mod access_level;
 pub mod logger;
-mod request_info;
+pub mod request_info;
 
 use crate::AppState;
 use crate::common::build_login_redirection;
@@ -66,7 +66,7 @@ pub async fn handle_forward_auth(
             );
             data.allow_invitee_session(
                 &state.audit,
-                &invited_by,
+                invited_by,
                 session_hash,
                 request.arrival() + config.invitee_session_expiration,
             );

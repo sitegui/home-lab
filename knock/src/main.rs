@@ -22,11 +22,11 @@ use crate::persistence::load_and_spawn_persist_loop;
 use crate::servers::forward_auth::handle_forward_auth;
 use crate::servers::forward_auth::logger::Logger;
 use crate::servers::login::{handle_login_action, handle_login_page};
-use crate::servers::portal::handle_portal_page;
+use crate::servers::portal::{handle_portal_page, post_invite_link};
 use crate::terminate::TERMINATE;
 use crate::throttle::Throttle;
 use axum::Router;
-use axum::routing::get;
+use axum::routing::{get, post};
 use parking_lot::Mutex;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -93,6 +93,7 @@ async fn main() -> anyhow::Result<()> {
 
     let portal_router = Router::new()
         .route("/", get(handle_portal_page))
+        .route("/api/v1/invite-link", post(post_invite_link))
         .with_state(state.clone());
     tracing::info!("Login listening on {}", portal_listener.local_addr()?);
     let portal_server = tokio::spawn(
