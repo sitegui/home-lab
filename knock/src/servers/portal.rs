@@ -1,14 +1,12 @@
 use crate::AppState;
 use crate::common::{escape_html, generate_token};
 use crate::parse_duration::parse_duration;
-use crate::servers::forward_auth::access_level::AccessLevel;
-use crate::servers::forward_auth::request_info::RequestInfo;
 use crate::string_hash::StringHash;
-use anyhow::Context;
+use anyhow::{Context, bail};
 use axum::Json;
 use axum::extract::State;
+use axum::http::Uri;
 use axum::http::uri::Builder;
-use axum::http::{HeaderMap, StatusCode, Uri};
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use chrono::Utc;
@@ -43,24 +41,15 @@ pub struct InvitationLinkResponse {
 }
 
 pub async fn post_invite_link(
-    headers: HeaderMap,
     cookies: CookieJar,
     State(state): State<Arc<AppState>>,
     Json(body): Json<InvitationLinkRequest>,
 ) -> Response {
-    let config = &state.config;
-    let request = unwrap_or_500!(RequestInfo::new(config, &cookies, headers));
-
     let token = unwrap_or_500!(generate_token());
     let new_url = unwrap_or_400!(append_token_to_url(&body.url, &token));
     let expiration = unwrap_or_400!(parse_duration(&body.expiration));
 
-    let session = match AccessLevel::new(&state, &request) {
-        AccessLevel::Session(session) => session,
-        _ => {
-            return StatusCode::UNAUTHORIZED.into_response();
-        }
-    };
+    let session = unwrap_or_403!(ensure_valid_session(&state, &cookies));
 
     let url_hash = StringHash::new(&new_url);
     let now = Utc::now();
@@ -70,6 +59,24 @@ pub async fn post_invite_link(
         .add_invite_link(&state.audit, url_hash, session, now + expiration);
 
     Json(InvitationLinkResponse { url: new_url }).into_response()
+}
+
+fn ensure_valid_session(state: &AppState, cookies: &CookieJar) -> anyhow::Result<StringHash> {
+    let session = cookies
+        .get(&state.config.knock_cookie_name)
+        .context("missing knock cookie")?;
+    let session_hash = StringHash::new(session.value());
+    let data = state.data.lock();
+    let session = data
+        .sessions
+        .get(&session_hash)
+        .context("unknown session")?;
+
+    if session.expires_at < Utc::now() {
+        bail!("session expired");
+    }
+
+    Ok(session_hash)
 }
 
 fn append_token_to_url(url: &str, token: &str) -> anyhow::Result<String> {
