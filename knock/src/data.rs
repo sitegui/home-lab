@@ -46,6 +46,7 @@ pub struct IpSession {
 #[derive(Serialize, Deserialize)]
 pub struct InviteLink {
     pub generated_by: StringHash,
+    pub original_length: usize,
     pub expires_at: DateTime<Utc>,
 }
 
@@ -129,6 +130,7 @@ impl Data {
         audit: &Audit,
         link_hash: StringHash,
         generated_by: StringHash,
+        original_length: usize,
         expires_at: DateTime<Utc>,
     ) {
         audit.report(AuditEvent::NewInviteLink {
@@ -140,6 +142,7 @@ impl Data {
             link_hash,
             InviteLink {
                 generated_by,
+                original_length,
                 expires_at,
             },
         );

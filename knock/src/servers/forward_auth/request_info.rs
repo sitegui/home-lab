@@ -54,7 +54,7 @@ impl RequestInfo {
         self.session_hash
     }
 
-    pub fn callback(&self) -> String {
+    pub fn uri(&self) -> String {
         format!("{}://{}{}", self.proto, self.host, self.uri)
     }
 }

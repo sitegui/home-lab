@@ -53,10 +53,13 @@ pub async fn post_invite_link(
 
     let url_hash = StringHash::new(&new_url);
     let now = Utc::now();
-    state
-        .data
-        .lock()
-        .add_invite_link(&state.audit, url_hash, session, now + expiration);
+    state.data.lock().add_invite_link(
+        &state.audit,
+        url_hash,
+        session,
+        body.url.len(),
+        now + expiration,
+    );
 
     Json(InvitationLinkResponse { url: new_url }).into_response()
 }

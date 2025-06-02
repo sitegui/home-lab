@@ -11,7 +11,10 @@ pub enum AccessLevel {
     /// Access is ensured by a session cookie, created by an explicit login or an invitation
     Session(StringHash),
     /// Access is ensured by an exact invitation link
-    InviteLink(StringHash),
+    InviteLink {
+        generated_by: StringHash,
+        original_length: usize,
+    },
     /// Access is ensured by a previously approved IP
     Ip,
     /// Access is ensured by the IP being part of an allowed network
@@ -30,9 +33,12 @@ impl AccessLevel {
             }
         }
 
-        if let Some(invite_link) = data.invite_links.get(&StringHash::new(&request.callback())) {
+        if let Some(invite_link) = data.invite_links.get(&StringHash::new(&request.uri())) {
             if invite_link.expires_at > request.arrival() {
-                return AccessLevel::InviteLink(invite_link.generated_by);
+                return AccessLevel::InviteLink {
+                    generated_by: invite_link.generated_by,
+                    original_length: invite_link.original_length,
+                };
             }
         }
 
