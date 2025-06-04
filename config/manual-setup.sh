@@ -183,6 +183,11 @@ cargo run -- compile-nextcloud-units \
 (
 # Configure the default daily updates to only consider security updates and to restart the machine if needed.
 
+sudo tee /etc/apt/apt.conf.d/99sitegui-always-update << 'EOF'
+APT::Periodic::Update-Package-Lists "always";
+APT::Periodic::Unattended-Upgrade "always";
+EOF
+
 sudo tee /etc/apt/apt.conf.d/99sitegui-security-only << 'EOF'
 #clear Unattended-Upgrade::Allowed-Origins;
 Unattended-Upgrade::Allowed-Origins {
