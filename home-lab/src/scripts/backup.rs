@@ -69,11 +69,11 @@ enum BackupDisk {
 
 impl BackupDisk {
     fn mount_one(home: &Path) -> anyhow::Result<Self> {
-        match BackupDisk::Backup2.ensure_mounted(home) {
-            Ok(()) => Ok(BackupDisk::Backup2),
-            Err(error_2) => match BackupDisk::Backup1.ensure_mounted(home) {
-                Ok(()) => Ok(BackupDisk::Backup1),
-                Err(error_1) => {
+        match BackupDisk::Backup1.ensure_mounted(home) {
+            Ok(()) => Ok(BackupDisk::Backup1),
+            Err(error_1) => match BackupDisk::Backup2.ensure_mounted(home) {
+                Ok(()) => Ok(BackupDisk::Backup2),
+                Err(error_2) => {
                     tracing::warn!("Failed to mount backup-1: {:?}", error_1);
                     tracing::warn!("Failed to mount backup-2: {:?}", error_2);
                     bail!("Failed to mount backup-1 or backup-2");
