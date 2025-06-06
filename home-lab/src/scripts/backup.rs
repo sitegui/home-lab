@@ -1,7 +1,7 @@
 use crate::child::Child;
 use crate::home::home;
 use crate::mount::mount_source;
-use anyhow::{Context, ensure};
+use anyhow::{Context, bail, ensure};
 use chrono::Utc;
 use itertools::Itertools;
 use std::fs;
@@ -18,23 +18,24 @@ pub fn backup() -> anyhow::Result<()> {
     fs::write(protected_dir.join("last-backup-attempt.txt"), &now)
         .context("failed to write last-backup-attempt.txt")?;
 
-    let backup_dir = ensure_backup_mounted(&home)?;
+    let backup_disk = BackupDisk::mount_one(&home)?;
+    let backup_dir = backup_disk.backup_dir(&home);
     let stopped_services = stop_containers(&home)?;
 
-    Child::new("rsync")
-        .args([
-            home.join("bare"),
-            home.join("protected"),
-            home.join("backup-1"),
-        ])
-        .args([
-            "--archive",
-            "--delete",
-            "--verbose",
-            "--exclude",
-            "/protected/nextcloud/volumes/nextcloud_aio_nextcloud_data/sitegui/files/Jellyfin",
-        ])
-        .run()?;
+    let mut child = Child::new("rsync")
+        .arg(home.join("bare"))
+        .arg(home.join("protected"))
+        .arg(&backup_dir)
+        .arg("--archive")
+        .arg("--delete")
+        .arg("--verbose");
+
+    for exclude in backup_disk.exclude() {
+        child = child.arg("--exclude");
+        child = child.arg(exclude);
+    }
+
+    child.run()?;
 
     drop(stopped_services);
 
@@ -54,28 +55,77 @@ pub fn backup() -> anyhow::Result<()> {
 
     tracing::info!("Will unmount backup");
     Child::new("sudo")
-        .arg(home.join("sudo-scripts/umount-backup-1.sh"))
+        .arg(backup_disk.unmount_script(&home))
         .run()?;
 
     Ok(())
 }
 
-fn ensure_backup_mounted(home: &Path) -> anyhow::Result<PathBuf> {
-    let backup_dir = home.join("backup-1");
+#[derive(Debug, Copy, Clone)]
+enum BackupDisk {
+    Backup1,
+    Backup2,
+}
 
-    let backup_mount = match mount_source(&backup_dir) {
-        Ok(backup_mount) => backup_mount,
-        Err(_) => {
-            tracing::info!("Will try to mount backup-1");
-            Child::new("sudo")
-                .arg(home.join("sudo-scripts/mount-backup-1.sh"))
-                .run()?;
-            mount_source(&backup_dir).context("failed to mount backup-1")?
+impl BackupDisk {
+    fn mount_one(home: &Path) -> anyhow::Result<Self> {
+        match BackupDisk::Backup1.ensure_mounted(home) {
+            Ok(()) => Ok(BackupDisk::Backup1),
+            Err(error_1) => match BackupDisk::Backup2.ensure_mounted(home) {
+                Ok(()) => Ok(BackupDisk::Backup2),
+                Err(error_2) => {
+                    tracing::warn!("Failed to mount backup-1: {:?}", error_1);
+                    tracing::warn!("Failed to mount backup-2: {:?}", error_2);
+                    bail!("Failed to mount backup-1 or backup-2");
+                }
+            },
         }
-    };
-    tracing::info!("Backing up into {}", backup_mount);
+    }
 
-    Ok(backup_dir)
+    fn backup_dir(self, home: &Path) -> PathBuf {
+        match self {
+            BackupDisk::Backup1 => home.join("backup-1"),
+            BackupDisk::Backup2 => home.join("backup-2"),
+        }
+    }
+
+    fn mount_script(self, home: &Path) -> PathBuf {
+        match self {
+            BackupDisk::Backup1 => home.join("sudo-scripts/mount-backup-1.sh"),
+            BackupDisk::Backup2 => home.join("sudo-scripts/mount-backup-2.sh"),
+        }
+    }
+
+    fn unmount_script(self, home: &Path) -> PathBuf {
+        match self {
+            BackupDisk::Backup1 => home.join("sudo-scripts/umount-backup-1.sh"),
+            BackupDisk::Backup2 => home.join("sudo-scripts/umount-backup-2.sh"),
+        }
+    }
+
+    fn ensure_mounted(self, home: &Path) -> anyhow::Result<()> {
+        let backup_dir = self.backup_dir(home);
+        let backup_mount = match mount_source(&backup_dir) {
+            Ok(backup_mount) => backup_mount,
+            Err(_) => {
+                tracing::info!("Will try to mount {}", backup_dir.display());
+                Child::new("sudo").arg(self.mount_script(home)).run()?;
+                mount_source(&backup_dir).context("failed to mount backup")?
+            }
+        };
+        tracing::info!("Backing up into {}", backup_mount);
+
+        Ok(())
+    }
+
+    fn exclude(self) -> Vec<PathBuf> {
+        match self {
+            BackupDisk::Backup1 => vec![PathBuf::from(
+                "/protected/nextcloud/volumes/nextcloud_aio_nextcloud_data/sitegui/files/Jellyfin",
+            )],
+            BackupDisk::Backup2 => vec![],
+        }
+    }
 }
 
 struct StartServicesOnDrop(Vec<String>);

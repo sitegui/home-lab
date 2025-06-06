@@ -50,7 +50,13 @@ mkdir "$HOME/backup-1" "$HOME/backup-2"
 ### Create a new encrypted disk for backups
 ###
 (
-DEVICE=/dev/disk/by-uuid/746cc868-91bc-4f4d-ad78-2fc00084bcad
+DEVICE=/dev/disk/by-uuid/0b6fd7a0-ceb6-488d-ae89-835ab359c887
+sudo cryptsetup luksFormat "$DEVICE"
+sudo cryptsetup open "$DEVICE" temp
+sudo mkfs.ext4 /dev/mapper/temp
+sudo cryptsetup close temp
+
+DEVICE=/dev/sdc
 sudo cryptsetup luksFormat "$DEVICE"
 sudo cryptsetup open "$DEVICE" temp
 sudo mkfs.ext4 /dev/mapper/temp
