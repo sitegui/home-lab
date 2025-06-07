@@ -1,5 +1,5 @@
 use crate::AppState;
-use crate::common::{escape_html, generate_token};
+use crate::common::{escape_html, random_string};
 use crate::parse_duration::parse_duration;
 use crate::string_hash::StringHash;
 use anyhow::{Context, bail};
@@ -45,7 +45,7 @@ pub async fn post_invite_link(
     State(state): State<Arc<AppState>>,
     Json(body): Json<InvitationLinkRequest>,
 ) -> Response {
-    let token = unwrap_or_500!(generate_token());
+    let token = unwrap_or_500!(random_string());
     let new_url = unwrap_or_400!(append_token_to_url(&body.url, &token));
     let expiration = unwrap_or_400!(parse_duration(&body.expiration));
 

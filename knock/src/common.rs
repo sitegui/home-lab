@@ -2,6 +2,8 @@ use crate::config::Config;
 use anyhow::{Context, anyhow};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect, Response};
+use axum_extra::extract::cookie::Cookie;
+use chrono::TimeDelta;
 use std::net::IpAddr;
 
 pub fn read_header<'a>(headers: &'a HeaderMap, name: &str) -> anyhow::Result<&'a str> {
@@ -42,9 +44,24 @@ pub fn escape_html(value: &str) -> String {
         .replace('"', "&quot;")
 }
 
-pub fn generate_token() -> anyhow::Result<String> {
+pub fn random_string() -> anyhow::Result<String> {
     let mut random_bytes = [0u8; 16];
     getrandom::fill(&mut random_bytes)
         .map_err(|error| anyhow!("failed to generate random bytes: {}", error))?;
     Ok(hex::encode(random_bytes))
+}
+
+pub fn create_cookie(
+    name: String,
+    value: String,
+    domain: String,
+    expiration: TimeDelta,
+) -> Cookie<'static> {
+    let max_age = ::time::Duration::try_from(expiration.to_std().unwrap()).unwrap();
+    Cookie::build((name, value))
+        .domain(domain)
+        .max_age(max_age)
+        .secure(true)
+        .http_only(true)
+        .build()
 }

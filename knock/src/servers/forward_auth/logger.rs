@@ -13,7 +13,7 @@ pub struct Logger(FileAppender);
 struct Log<'a> {
     arrival: DateTime<Utc>,
     headers: BTreeMap<&'a str, &'a str>,
-    access_level: &'a AccessLevel,
+    access_level: &'a AccessLevel<'a>,
 }
 
 impl Logger {
@@ -24,23 +24,25 @@ impl Logger {
     pub async fn log(
         &self,
         request: &RequestInfo,
-        access_level: &AccessLevel,
+        access_level: &AccessLevel<'_>,
     ) -> anyhow::Result<()> {
         let headers = request
-            .headers()
+            .headers
             .iter()
             .map(|(k, v)| (k.as_str(), v.to_str().unwrap_or("<INVALID UTF-8>")))
             .collect();
 
         let log = Log {
-            arrival: request.arrival(),
+            arrival: request.arrival,
             headers,
             access_level,
         };
 
-        let log_str = serde_json::to_string(&log)?;
-        self.0.append(log_str.as_bytes()).await?;
-        self.0.append(b"\n").await
+        let mut log_str = serde_json::to_string(&log)?;
+        log_str.push('\n');
+
+        // TODO: don't block the critical zone
+        self.0.append(log_str.as_bytes()).await
     }
 
     pub async fn flush(&self) -> anyhow::Result<()> {

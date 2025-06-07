@@ -1,7 +1,7 @@
 use crate::AppState;
 use crate::common::{escape_html, read_client_ip};
 use crate::config::Config;
-use crate::data::{Data, UserName};
+use crate::data::Data;
 use anyhow::Context;
 use axum::Form;
 use axum::extract::{Query, State};
@@ -47,7 +47,7 @@ pub async fn handle_login_action(
     let config = &state.config;
     state.throttle.wait(config.login_throttle).await;
 
-    let username = UserName(username.trim().to_string());
+    let username = username.trim().to_string();
 
     let client_ip = unwrap_or_403!(read_client_ip(&headers));
     let now = Utc::now();

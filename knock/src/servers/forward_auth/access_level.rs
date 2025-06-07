@@ -1,63 +1,58 @@
-use crate::AppState;
+use crate::config::Config;
+use crate::data::{AppToken, Data, GuestLink, GuestSession, IpSession, LoginSession};
 use crate::servers::forward_auth::request_info::RequestInfo;
-use crate::string_hash::StringHash;
 use serde::Serialize;
 
 /// Represents which kind of access validates this request
 #[derive(Debug, Clone, Serialize)]
-pub enum AccessLevel {
-    /// Access is denied
+pub enum AccessLevel<'a> {
     None,
-    /// Access is ensured by a session cookie, created by an explicit login or an invitation
-    Session(StringHash),
-    /// Access is ensured by an exact invitation link
-    InviteLink {
-        link_hash: StringHash,
-        generated_by: StringHash,
-        original_length: usize,
-    },
-    /// Access is ensured by a previously approved IP
-    Ip,
-    /// Access is ensured by the IP being part of an allowed network
+    LoginSession(&'a LoginSession),
+    GuestSession(&'a GuestSession, Option<&'a GuestLink>),
+    GuestLink(&'a GuestLink),
+    AppToken(&'a AppToken),
+    Ip(&'a IpSession),
     AllowedNetwork,
 }
 
-impl AccessLevel {
-    pub fn new(state: &AppState, request: &RequestInfo) -> Self {
-        let data = state.data.lock();
-
-        if let Some(session_hash) = request.session_hash() {
-            if let Some(session) = data.sessions.get(&session_hash) {
-                if session.expires_at > request.arrival() {
-                    return AccessLevel::Session(session_hash);
-                }
+impl<'a> AccessLevel<'a> {
+    pub fn new(config: &Config, data: &'a Data, request: &RequestInfo) -> Self {
+        if let Some(login_session_hash) = request.login_session_hash {
+            if let Some(login_session) =
+                data.valid_login_session(request.arrival, login_session_hash)
+            {
+                return AccessLevel::LoginSession(login_session);
             }
         }
 
-        let link_hash = StringHash::new(&request.uri());
-        if let Some(invite_link) = data.invite_links.get(&link_hash) {
-            if invite_link.expires_at > request.arrival() {
-                return AccessLevel::InviteLink {
-                    link_hash,
-                    generated_by: invite_link.generated_by,
-                    original_length: invite_link.original_length,
-                };
+        let guest_link = data.valid_guest_link(request.arrival, &request.url());
+
+        if let Some(guest_session_hash) = request.guest_session_hash {
+            if let Some(guest_session) =
+                data.valid_guest_session(request.arrival, &request.host, guest_session_hash)
+            {
+                return AccessLevel::GuestSession(guest_session, guest_link);
             }
         }
 
-        if let Some(ip) = data.ips.get(&request.client_ip()) {
-            if let Some(ip_session) = &ip.session {
-                if ip_session.expires_at > request.arrival() {
-                    return AccessLevel::Ip;
-                }
+        if let Some(guest_link) = guest_link {
+            return AccessLevel::GuestLink(guest_link);
+        }
+
+        if let Some(app_token_hash) = request.app_token_hash {
+            if let Some(app_token) = data.valid_app_token(request.arrival, app_token_hash) {
+                return AccessLevel::AppToken(app_token);
             }
         }
 
-        if state
-            .config
+        if let Some(ip) = data.valid_ip(request.arrival, request.client_ip) {
+            return AccessLevel::Ip(ip);
+        }
+
+        if config
             .allowed_networks
             .iter()
-            .any(|network| network.includes(request.client_ip()))
+            .any(|network| network.includes(request.client_ip))
         {
             return AccessLevel::AllowedNetwork;
         }

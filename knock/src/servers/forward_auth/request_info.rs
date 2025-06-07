@@ -8,13 +8,15 @@ use chrono::{DateTime, Utc};
 use std::net::IpAddr;
 
 pub struct RequestInfo {
-    arrival: DateTime<Utc>,
-    headers: HeaderMap,
-    client_ip: IpAddr,
-    uri: String,
-    proto: String,
-    host: String,
-    session_hash: Option<StringHash>,
+    pub arrival: DateTime<Utc>,
+    pub headers: HeaderMap,
+    pub client_ip: IpAddr,
+    pub uri: String,
+    pub proto: String,
+    pub host: String,
+    pub login_session_hash: Option<StringHash>,
+    pub guest_session_hash: Option<StringHash>,
+    pub app_token_hash: Option<StringHash>,
 }
 
 impl RequestInfo {
@@ -23,9 +25,15 @@ impl RequestInfo {
         let uri = read_header(&headers, "x-forwarded-uri")?.to_owned();
         let proto = read_header(&headers, "x-forwarded-proto")?.to_owned();
         let host = read_header(&headers, "x-forwarded-host")?.to_owned();
-        let session_hash = cookies
-            .get(&config.knock_cookie_name)
+        let login_session_hash = cookies
+            .get(&config.login_session_cookie)
             .map(|cookie| StringHash::new(cookie.value()));
+        let guest_session_hash = cookies
+            .get(&config.guest_session_cookie)
+            .map(|cookie| StringHash::new(cookie.value()));
+        let app_token_hash = read_header(&headers, "authentication")
+            .ok()
+            .map(|auth| StringHash::new(&format!("{},{}", host, auth)));
 
         Ok(Self {
             arrival: Utc::now(),
@@ -34,27 +42,13 @@ impl RequestInfo {
             uri,
             proto,
             host,
-            session_hash,
+            login_session_hash,
+            guest_session_hash,
+            app_token_hash,
         })
     }
 
-    pub fn arrival(&self) -> DateTime<Utc> {
-        self.arrival
-    }
-
-    pub fn headers(&self) -> &HeaderMap {
-        &self.headers
-    }
-
-    pub fn client_ip(&self) -> IpAddr {
-        self.client_ip
-    }
-
-    pub fn session_hash(&self) -> Option<StringHash> {
-        self.session_hash
-    }
-
-    pub fn uri(&self) -> String {
+    pub fn url(&self) -> String {
         format!("{}://{}{}", self.proto, self.host, self.uri)
     }
 }

@@ -1,6 +1,5 @@
 #[macro_use]
 mod macros;
-mod audit;
 mod ban_timer;
 mod common;
 mod config;
@@ -15,7 +14,6 @@ mod string_hash;
 mod terminate;
 mod throttle;
 
-use crate::audit::Audit;
 use crate::config::Config;
 use crate::data::Data;
 use crate::persistence::load_and_spawn_persist_loop;
@@ -36,7 +34,6 @@ struct AppState {
     config: Config,
     throttle: Throttle,
     forward_auth_logger: Option<Logger>,
-    audit: Audit,
 }
 
 #[tokio::main]
@@ -58,14 +55,11 @@ async fn main() -> anyhow::Result<()> {
         Some(path) => Some(Logger::new(path).await?),
     };
 
-    let audit = Audit::new(&config.audit_log_file).await?;
-
     let state = Arc::new(AppState {
         data,
         config,
         throttle: Throttle::default(),
         forward_auth_logger,
-        audit,
     });
 
     let forward_auth_router = Router::new()
@@ -109,7 +103,6 @@ async fn main() -> anyhow::Result<()> {
     if let Some(logger) = &state.forward_auth_logger {
         logger.flush().await?;
     }
-    state.audit.flush().await?;
 
     Ok(())
 }

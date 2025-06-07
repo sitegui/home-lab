@@ -7,7 +7,7 @@ use std::fmt::{Debug, Formatter};
 
 /// Represents the SHA-256 hash of a string that can be used for constant-type comparison without
 /// storing the original string
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub struct StringHash(Output<Sha256>);
 
 impl StringHash {

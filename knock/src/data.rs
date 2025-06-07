@@ -1,152 +1,290 @@
-use crate::audit::{Audit, AuditEvent};
+mod map;
+
 use crate::ban_timer::BanTimer;
-use crate::common::generate_token;
-use crate::config::Config;
+use crate::common::random_string;
+use crate::data::map::{Map, MapItem};
 use crate::string_hash::StringHash;
-use axum_extra::extract::cookie::Cookie;
 use chrono::{DateTime, TimeDelta, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::fmt::{Display, Formatter};
+use std::collections::HashSet;
 use std::net::IpAddr;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Data {
-    pub users: BTreeMap<UserName, User>,
-    pub sessions: BTreeMap<StringHash, Session>,
-    pub ips: BTreeMap<IpAddr, Ip>,
-    pub invite_links: BTreeMap<StringHash, InviteLink>,
+    pub users: Map<User>,
+    pub login_sessions: Map<LoginSession>,
+    pub guest_links: Map<GuestLink>,
+    pub guest_sessions: Map<GuestSession>,
+    pub ips: Map<Ip>,
+    pub app_tokens: Map<AppToken>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct UserName(pub String);
-
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct User {
+    pub name: String,
     pub ban_timer: BanTimer,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Session {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LoginSession {
+    pub value_hash: StringHash,
+    pub user_name: String,
+    pub origin_ip: IpAddr,
+    pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GuestLink {
+    pub url_hash: StringHash,
+    pub suffix_length: usize,
+    pub created_at: DateTime<Utc>,
+    pub created_by_login_session: StringHash,
+    pub expires_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GuestSession {
+    pub value_hash: StringHash,
+    pub hosts: HashSet<String>,
+    pub guest_link_hashes: HashSet<StringHash>,
+    pub origin_ip: IpAddr,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Ip {
+    pub ip_addr: IpAddr,
     pub ban_timer: BanTimer,
     /// If this ip is authorized
     pub session: Option<IpSession>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct IpSession {
+    pub login_sessions: HashSet<StringHash>,
+    pub app_tokens: HashSet<StringHash>,
+    pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct InviteLink {
-    pub generated_by: StringHash,
-    pub original_length: usize,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AppToken {
+    pub value_hash: StringHash,
+    pub host: String,
+    pub login_sessions: HashSet<StringHash>,
+    pub ips: HashSet<IpAddr>,
+    pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
 }
 
-impl Display for UserName {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
+macro_rules! impl_map_item {
+    ($struct_name:ty => $field:ident: $field_type:ty) => {
+        impl MapItem for $struct_name {
+            type Key = $field_type;
+
+            fn key(&self) -> &$field_type {
+                &self.$field
+            }
+        }
+    };
 }
+
+impl_map_item! {User => name: String}
+impl_map_item! {LoginSession => value_hash: StringHash}
+impl_map_item! {GuestLink => url_hash: StringHash}
+impl_map_item! {GuestSession => value_hash: StringHash}
+impl_map_item! {Ip => ip_addr: IpAddr}
+impl_map_item! {AppToken => value_hash: StringHash}
 
 impl Data {
-    pub fn allow_ip(
-        &mut self,
-        audit: &Audit,
-        ip: IpAddr,
-        by_session: StringHash,
-        expires_at: DateTime<Utc>,
-    ) {
-        self.ips
-            .entry(ip)
-            .or_insert_with(|| {
-                audit.report(AuditEvent::IpAllowed {
-                    ip,
-                    by_session,
-                    until_at_least: expires_at,
-                });
-                Ip::default()
-            })
-            .session = Some(IpSession { expires_at });
+    pub fn valid_login_session(
+        &self,
+        now: DateTime<Utc>,
+        value_hash: StringHash,
+    ) -> Option<&LoginSession> {
+        let session = self.login_sessions.get(&value_hash)?;
+
+        (session.expires_at > now).then_some(session)
     }
 
-    pub fn allow_invitee_session(
-        &mut self,
-        audit: &Audit,
-        link_hash: StringHash,
-        invited_by: StringHash,
-        session: StringHash,
-        expires_at: DateTime<Utc>,
-    ) {
-        audit.report(AuditEvent::NewInviteeSession {
-            link_hash,
-            invited_by,
-            session,
-            expires_at,
-        });
-        self.sessions.insert(session, Session { expires_at });
+    pub fn valid_guest_link(&self, now: DateTime<Utc>, url: &str) -> Option<&GuestLink> {
+        if !url.ends_with('k') {
+            return None;
+        }
+
+        let guest_link = self.guest_links.get(&StringHash::new(url))?;
+
+        (guest_link.expires_at > now).then_some(guest_link)
     }
 
-    pub fn allow_login_session(
-        &mut self,
-        audit: &Audit,
-        user: &UserName,
-        session: StringHash,
-        expires_at: DateTime<Utc>,
-    ) {
-        audit.report(AuditEvent::NewLoginSession {
-            user,
-            session,
-            expires_at,
-        });
-        self.sessions.insert(session, Session { expires_at });
+    pub fn valid_guest_session(
+        &self,
+        now: DateTime<Utc>,
+        host: &str,
+        value_hash: StringHash,
+    ) -> Option<&GuestSession> {
+        let session = self.guest_sessions.get(&value_hash)?;
+
+        (session.expires_at > now && session.hosts.contains(host)).then_some(session)
     }
 
-    pub fn generate_session(
-        config: &Config,
+    pub fn valid_ip(&self, now: DateTime<Utc>, ip_addr: IpAddr) -> Option<&IpSession> {
+        let ip_session = self.ips.get(&ip_addr)?.session.as_ref()?;
+
+        (ip_session.expires_at > now).then_some(ip_session)
+    }
+
+    pub fn valid_app_token(
+        &self,
+        now: DateTime<Utc>,
+        app_token_hash: StringHash,
+    ) -> Option<&AppToken> {
+        let app_token = self.app_tokens.get(&app_token_hash)?;
+
+        (app_token.expires_at > now).then_some(app_token)
+    }
+
+    pub fn create_login_session(
+        &mut self,
+        user_name: String,
+        origin_ip: IpAddr,
         expiration: TimeDelta,
-    ) -> anyhow::Result<(StringHash, Cookie<'static>)> {
-        let session = generate_token()?;
-        let session_hash = StringHash::new(&session);
+    ) -> anyhow::Result<String> {
+        let value = random_string()?;
+        let value_hash = StringHash::new(&value);
+        let created_at = Utc::now();
+        self.login_sessions.insert(LoginSession {
+            value_hash,
+            user_name,
+            origin_ip,
+            created_at,
+            expires_at: created_at + expiration,
+        });
 
-        let max_age = ::time::Duration::try_from(expiration.to_std()?)?;
-        let cookie = Cookie::build((config.knock_cookie_name.clone(), session))
-            .domain(config.knock_cookie_domain.clone())
-            .max_age(max_age)
-            .secure(true)
-            .http_only(true)
-            .build();
-
-        Ok((session_hash, cookie))
+        Ok(value)
     }
 
-    pub fn add_invite_link(
+    pub fn create_guest_link(
         &mut self,
-        audit: &Audit,
-        link_hash: StringHash,
-        generated_by: StringHash,
-        original_length: usize,
-        expires_at: DateTime<Utc>,
-    ) {
-        audit.report(AuditEvent::NewInviteLink {
-            link_hash,
-            generated_by,
-            expires_at,
+        login_session: &LoginSession,
+        url: String,
+        expiration: TimeDelta,
+    ) -> anyhow::Result<String> {
+        let token = random_string()?;
+
+        let new_url = format!("{}{}k", url, token);
+        let url_hash = StringHash::new(&new_url);
+
+        let created_at = Utc::now();
+        self.guest_links.insert(GuestLink {
+            url_hash,
+            created_by_login_session: login_session.value_hash,
+            suffix_length: token.len() + 1,
+            created_at,
+            expires_at: created_at + expiration,
         });
-        self.invite_links.insert(
-            link_hash,
-            InviteLink {
-                generated_by,
-                original_length,
-                expires_at,
-            },
-        );
+
+        Ok(new_url)
+    }
+
+    pub fn create_guest_session(
+        &mut self,
+        url_hash: StringHash,
+        host: String,
+        origin_ip: IpAddr,
+        expiration: TimeDelta,
+    ) -> anyhow::Result<String> {
+        let value = random_string()?;
+        let value_hash = StringHash::new(&value);
+
+        let created_at = Utc::now();
+        self.guest_sessions.insert(GuestSession {
+            value_hash,
+            hosts: HashSet::from_iter([host]),
+            guest_link_hashes: HashSet::from_iter([url_hash]),
+            origin_ip,
+            created_at,
+            expires_at: created_at + expiration,
+        });
+
+        Ok(value)
+    }
+
+    pub fn update_guest_session(
+        &mut self,
+        value_hash: StringHash,
+        host: String,
+        guest_link_hash: StringHash,
+    ) {
+        let Some(session) = self.guest_sessions.get_mut(&value_hash) else {
+            return;
+        };
+
+        session.hosts.insert(host);
+        session.guest_link_hashes.insert(guest_link_hash);
+    }
+
+    pub fn update_ip_session(
+        &mut self,
+        ip_addr: IpAddr,
+        login_session: Option<StringHash>,
+        app_token: Option<StringHash>,
+        expiration: TimeDelta,
+    ) {
+        let ip = self.ips.get_or_insert_with(&ip_addr, || Ip {
+            ip_addr,
+            ban_timer: Default::default(),
+            session: None,
+        });
+
+        let now = Utc::now();
+        let ip_session = ip.session.get_or_insert_with(|| IpSession {
+            login_sessions: Default::default(),
+            app_tokens: Default::default(),
+            created_at: now,
+            expires_at: now + expiration,
+        });
+
+        if let Some(login_session) = login_session {
+            ip_session.login_sessions.insert(login_session);
+        }
+        if let Some(app_token) = app_token {
+            ip_session.app_tokens.insert(app_token);
+        }
+        ip_session.expires_at = now + expiration;
+    }
+
+    pub fn update_app_token(
+        &mut self,
+        value_hash: StringHash,
+        host: &str,
+        login_session: Option<StringHash>,
+        ip: IpAddr,
+        expiration: TimeDelta,
+    ) {
+        let app_token = self.app_tokens.get_or_insert_with(&value_hash, || {
+            let created_at = Utc::now();
+            AppToken {
+                value_hash,
+                host: host.to_owned(),
+                login_sessions: Default::default(),
+                ips: Default::default(),
+                created_at,
+                expires_at: created_at + expiration,
+            }
+        });
+
+        if let Some(login_session) = login_session {
+            app_token.login_sessions.insert(login_session);
+        }
+        app_token.ips.insert(ip);
+    }
+}
+
+impl GuestLink {
+    pub fn original_url<'a>(&self, url: &'a str) -> &'a str {
+        &url[..url.len() - self.suffix_length]
     }
 }
