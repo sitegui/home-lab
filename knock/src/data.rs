@@ -151,7 +151,7 @@ impl Data {
         user_name: String,
         origin_ip: IpAddr,
         expiration: TimeDelta,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<(String, StringHash)> {
         let value = random_string()?;
         let value_hash = StringHash::new(&value);
         let created_at = Utc::now();
@@ -163,12 +163,12 @@ impl Data {
             expires_at: created_at + expiration,
         });
 
-        Ok(value)
+        Ok((value, value_hash))
     }
 
     pub fn create_guest_link(
         &mut self,
-        login_session: &LoginSession,
+        login_session_hash: StringHash,
         url: String,
         expiration: TimeDelta,
     ) -> anyhow::Result<String> {
@@ -180,7 +180,7 @@ impl Data {
         let created_at = Utc::now();
         self.guest_links.insert(GuestLink {
             url_hash,
-            created_by_login_session: login_session.value_hash,
+            created_by_login_session: login_session_hash,
             suffix_length: token.len() + 1,
             created_at,
             expires_at: created_at + expiration,

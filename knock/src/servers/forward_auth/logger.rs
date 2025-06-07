@@ -3,7 +3,7 @@ use crate::servers::forward_auth::access_level::AccessLevel;
 use crate::servers::forward_auth::request_info::RequestInfo;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Debug)]
@@ -12,7 +12,7 @@ pub struct Logger(FileAppender);
 #[derive(Serialize)]
 struct Log<'a> {
     arrival: DateTime<Utc>,
-    headers: BTreeMap<&'a str, &'a str>,
+    headers: HashMap<&'a str, &'a str>,
     access_level: &'a AccessLevel<'a>,
 }
 

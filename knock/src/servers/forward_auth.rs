@@ -74,7 +74,7 @@ pub async fn handle_forward_auth(
             let cookie = create_cookie(
                 config.guest_session_cookie.clone(),
                 token,
-                config.knock_cookie_domain.clone(),
+                config.cookie_domain.clone(),
                 config.guest_session_expiration,
             );
             let cookies = cookies.add(cookie);

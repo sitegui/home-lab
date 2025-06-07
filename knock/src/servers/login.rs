@@ -1,11 +1,11 @@
 use crate::AppState;
-use crate::common::{escape_html, read_client_ip};
+use crate::common::{create_cookie, escape_html, read_client_ip};
 use crate::config::Config;
-use crate::data::Data;
-use anyhow::Context;
+use crate::data::{Ip, User};
+use anyhow::{Context, ensure};
 use axum::Form;
 use axum::extract::{Query, State};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::{HeaderMap, StatusCode, Uri};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::CookieJar;
 use chrono::Utc;
@@ -42,83 +42,95 @@ pub async fn handle_login_action(
         token,
     }): Form<LoginPageForm>,
 ) -> Response {
-    // TODO: validate callback
-
     let config = &state.config;
+
     state.throttle.wait(config.login_throttle).await;
+
+    unwrap_or_400!(validate_callback(config, &callback).context("callback is invalid"));
 
     let username = username.trim().to_string();
 
     let client_ip = unwrap_or_403!(read_client_ip(&headers));
     let now = Utc::now();
-    {
-        let mut data = state.data.lock();
-        let data = &mut *data;
-        let ip_attempt = data.ips.entry(client_ip).or_default().ban_timer.attempt(
+    let mut data = state.data.lock();
+    let data = &mut *data;
+    let ip_attempt = data
+        .ips
+        .get_or_insert_with(&client_ip, || Ip {
+            ip_addr: client_ip,
+            session: None,
+            ban_timer: Default::default(),
+        })
+        .ban_timer
+        .attempt(
             now,
             config.failed_login_max_attempts_per_ip,
             config.failed_login_ban,
         );
-        let user_attempt = data
-            .users
-            .entry(username.clone())
-            .or_default()
-            .ban_timer
-            .attempt(
-                now,
-                config.failed_login_max_attempts_per_user,
-                config.failed_login_ban,
-            );
+    let user_attempt = data
+        .users
+        .get_or_insert_with(&username, || User {
+            name: username.clone(),
+            ban_timer: Default::default(),
+        })
+        .ban_timer
+        .attempt(
+            now,
+            config.failed_login_max_attempts_per_user,
+            config.failed_login_ban,
+        );
 
-        let Some((ip_attempt, user_attempt)) = ip_attempt.zip(user_attempt) else {
-            tracing::info!(
-                "FAILED: too many failed attempts for ip {} or user {}",
-                client_ip,
-                username
-            );
-            return StatusCode::UNAUTHORIZED.into_response();
-        };
+    let Some((ip_attempt, user_attempt)) = ip_attempt.zip(user_attempt) else {
+        tracing::info!(
+            "FAILED: too many failed attempts for ip {} or user {}",
+            client_ip,
+            username
+        );
+        return StatusCode::UNAUTHORIZED.into_response();
+    };
 
-        let Some(totps) = config.totps_by_user.get(&username) else {
-            tracing::info!("FAILED: unknown user");
-            return StatusCode::UNAUTHORIZED.into_response();
-        };
+    let Some(totps) = config.totps_by_user.get(&username) else {
+        tracing::info!("FAILED: unknown user");
+        return StatusCode::UNAUTHORIZED.into_response();
+    };
 
-        if !unwrap_or_500!(check_token(totps, &token)) {
-            tracing::info!("FAILED: invalid token");
-            return render_login_page(config, &callback);
-        }
-
-        ip_attempt.report_success();
-        user_attempt.report_success();
+    if !unwrap_or_500!(check_token(totps, &token)) {
+        tracing::info!("FAILED: invalid token");
+        return render_login_page(config, &callback);
     }
 
-    let (session_hash, cookie) = unwrap_or_500!(Data::generate_session(
-        config,
+    ip_attempt.report_success();
+    user_attempt.report_success();
+    tracing::info!("SUCCESS: {} login at {}", username, client_ip);
+
+    let (value, value_hash) = unwrap_or_500!(data.create_login_session(
+        username,
+        client_ip,
         config.login_session_expiration
     ));
+    data.update_ip_session(
+        client_ip,
+        Some(value_hash),
+        None,
+        config.ip_session_expiration,
+    );
 
-    {
-        let mut data = state.data.lock();
-
-        data.allow_login_session(
-            &state.audit,
-            &username,
-            session_hash,
-            now + config.login_session_expiration,
-        );
-        data.allow_ip(
-            &state.audit,
-            client_ip,
-            session_hash,
-            now + config.ip_session_expiration,
-        );
-    }
-
+    let cookie = create_cookie(
+        config.login_session_cookie.clone(),
+        value,
+        config.cookie_domain.clone(),
+        config.login_session_expiration,
+    );
     let cookies = cookies.add(cookie);
 
-    tracing::info!("SUCCESS: {} login at {}", username, client_ip);
     (cookies, Redirect::temporary(&callback)).into_response()
+}
+
+fn validate_callback(config: &Config, callback: &str) -> anyhow::Result<()> {
+    let uri: Uri = callback.parse()?;
+    let host = uri.host().context("missing host")?;
+    ensure!(config.valid_hosts.contains(host));
+    Ok(())
 }
 
 fn render_login_page(config: &Config, callback: &str) -> Response {

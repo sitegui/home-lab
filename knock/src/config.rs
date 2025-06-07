@@ -4,7 +4,7 @@ use crate::parse_duration::parse_duration;
 use anyhow::Context;
 use chrono::TimeDelta;
 use serde::Deserialize;
-use std::collections::BTreeMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
 use totp_rs::{Rfc6238, Secret, TOTP};
@@ -12,6 +12,7 @@ use totp_rs::{Rfc6238, Secret, TOTP};
 pub struct Config {
     pub allowed_networks: Vec<Network>,
     pub app_token_expiration: TimeDelta,
+    pub cookie_domain: String,
     pub data_file: PathBuf,
     pub data_persistence_interval: TimeDelta,
     pub failed_login_ban: TimeDelta,
@@ -20,13 +21,12 @@ pub struct Config {
     pub forward_auth_bind: String,
     pub forward_auth_log_file: Option<PathBuf>,
     pub forward_auth_port: u16,
+    pub guest_link_max_expiration: TimeDelta,
     pub guest_session_cookie: String,
     pub guest_session_expiration: TimeDelta,
     pub i18n: I18n,
     pub i18n_language: String,
-    pub invitee_session_expiration: TimeDelta,
     pub ip_session_expiration: TimeDelta,
-    pub knock_cookie_domain: String,
     pub login_bind: String,
     pub login_hostname: String,
     pub login_port: u16,
@@ -35,7 +35,8 @@ pub struct Config {
     pub login_throttle: TimeDelta,
     pub portal_bind: String,
     pub portal_port: u16,
-    pub totps_by_user: BTreeMap<String, Vec<TOTP>>,
+    pub totps_by_user: HashMap<String, Vec<TOTP>>,
+    pub valid_hosts: HashSet<String>,
 }
 
 impl Config {
@@ -53,7 +54,7 @@ impl Config {
             format!("failed to read users file: {}", config.users_file.display())
         })?;
 
-        let mut totps_by_user: BTreeMap<_, Vec<_>> = BTreeMap::new();
+        let mut totps_by_user: HashMap<_, Vec<_>> = HashMap::new();
         for user_str in users_str.lines() {
             let (name, totp) = parse_user(user_str).context("failed to parse user")?;
             totps_by_user.entry(name).or_default().push(totp);
@@ -64,6 +65,12 @@ impl Config {
             .split(',')
             .map(|network| network.parse())
             .collect::<anyhow::Result<_, _>>()?;
+
+        let valid_hosts = config
+            .valid_hosts
+            .split(',')
+            .map(|host| host.to_string())
+            .collect();
 
         Ok(Config {
             allowed_networks,
@@ -76,13 +83,13 @@ impl Config {
             forward_auth_bind: config.forward_auth_bind,
             forward_auth_log_file: config.forward_auth_log_file,
             forward_auth_port: config.forward_auth_port,
+            guest_link_max_expiration: parse_duration(&config.guest_link_max_expiration)?,
             guest_session_cookie: config.guest_session_cookie,
             guest_session_expiration: parse_duration(&config.guest_session_expiration)?,
             i18n,
             i18n_language: config.i18n_language,
-            invitee_session_expiration: parse_duration(&config.invitee_session_expiration)?,
             ip_session_expiration: parse_duration(&config.ip_session_expiration)?,
-            knock_cookie_domain: config.knock_cookie_domain,
+            cookie_domain: config.cookie_domain,
             login_bind: config.login_bind,
             login_hostname: config.login_hostname,
             login_port: config.login_port,
@@ -92,6 +99,7 @@ impl Config {
             portal_bind: config.portal_bind,
             portal_port: config.portal_port,
             totps_by_user,
+            valid_hosts,
         })
     }
 }
@@ -100,6 +108,7 @@ impl Config {
 struct EnvConfig {
     allowed_networks: String,
     app_token_expiration: String,
+    cookie_domain: String,
     data_file: PathBuf,
     data_persistence_interval: String,
     failed_login_ban: String,
@@ -108,13 +117,12 @@ struct EnvConfig {
     forward_auth_bind: String,
     forward_auth_log_file: Option<PathBuf>,
     forward_auth_port: u16,
+    guest_link_max_expiration: String,
     guest_session_cookie: String,
     guest_session_expiration: String,
     i18n_file: PathBuf,
     i18n_language: String,
-    invitee_session_expiration: String,
     ip_session_expiration: String,
-    knock_cookie_domain: String,
     login_bind: String,
     login_hostname: String,
     login_port: u16,
@@ -124,6 +132,7 @@ struct EnvConfig {
     portal_bind: String,
     portal_port: u16,
     users_file: PathBuf,
+    valid_hosts: String,
 }
 
 fn parse_user(s: &str) -> anyhow::Result<(String, TOTP)> {

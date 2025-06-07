@@ -1,9 +1,9 @@
 use anyhow::{Context, bail};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 /// A helper struct to translate text
 pub struct I18n {
-    languages: BTreeMap<String, BTreeMap<String, String>>,
+    languages: HashMap<String, HashMap<String, String>>,
 }
 
 impl I18n {
