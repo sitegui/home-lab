@@ -23,9 +23,9 @@ pub async fn handle_forward_auth(
     let mut data = state.data.lock();
     let access_level = AccessLevel::new(config, &data, &request);
 
-    // if let Some(logger) = &state.forward_auth_logger {
-    //     unwrap_or_500!(logger.log(&request, &access_level).await);
-    // }
+    if let Some(logger) = state.forward_auth_logger.lock().as_ref() {
+        unwrap_or_500!(logger.log(&request, &access_level));
+    }
 
     match access_level {
         AccessLevel::None => build_login_redirection(config, &request.url()),

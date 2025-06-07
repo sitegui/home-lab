@@ -4,7 +4,6 @@ mod ban_timer;
 mod common;
 mod config;
 mod data;
-mod file_appender;
 mod i18n;
 mod network;
 mod parse_duration;
@@ -33,7 +32,7 @@ struct AppState {
     data: Arc<Mutex<Data>>,
     config: Config,
     throttle: Throttle,
-    forward_auth_logger: Option<Logger>,
+    forward_auth_logger: Mutex<Option<Logger>>,
 }
 
 #[tokio::main]
@@ -59,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
         data,
         config,
         throttle: Throttle::default(),
-        forward_auth_logger,
+        forward_auth_logger: Mutex::new(forward_auth_logger),
     });
 
     let forward_auth_router = Router::new()
@@ -100,8 +99,9 @@ async fn main() -> anyhow::Result<()> {
     login_server.await.unwrap()?;
     portal_server.await.unwrap()?;
 
-    if let Some(logger) = &state.forward_auth_logger {
-        logger.flush().await?;
+    let forward_auth_logger = state.forward_auth_logger.lock().take();
+    if let Some(logger) = forward_auth_logger {
+        logger.shutdown().await?;
     }
 
     Ok(())
