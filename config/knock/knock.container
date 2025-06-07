@@ -10,18 +10,15 @@ Image = localhost/knock
 AutoUpdate = local
 UserNS = keep-id
 Volume = %h/bare/knock/secrets:/secrets
-Environment = ALLOWED_NETWORKS=192.168.1.0/24
+Environment = ALLOWED_NETWORKS=192.168.1.51
+Environment = COOKIE_DOMAIN=sitegui.dev
 Environment = FORWARD_AUTH_BIND=0.0.0.0
 Environment = FORWARD_AUTH_LOG_FILE=/secrets/forward_auth.jsonl
 Environment = I18N_LANGUAGE=fr
-Environment = INVITEE_SESSION_EXPIRATION=7d
-Environment = IP_SESSION_EXPIRATION=1d
-Environment = KNOCK_COOKIE_DOMAIN=sitegui.dev
 Environment = LOGIN_BIND=0.0.0.0
 Environment = LOGIN_HOSTNAME=https://login.sitegui.dev
-Environment = LOGIN_SESSION_EXPIRATION=30d
 Environment = PORTAL_BIND=0.0.0.0
-Environment = RUST_LOG=INFO
+Environment = VALID_HOSTS=films.sitegui.dev,docs.sitegui.dev,knock.sitegui.dev
 Network = caddy-knock.network
 
 [Install]
