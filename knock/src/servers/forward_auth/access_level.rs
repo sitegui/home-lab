@@ -6,26 +6,26 @@ use serde::Serialize;
 /// Represents which kind of access validates this request
 #[derive(Debug, Clone, Serialize)]
 pub enum AccessLevel<'a> {
-    None,
-    LoginSession(&'a LoginSession),
+    LoginSession(&'a LoginSession, Option<&'a GuestLink>),
     GuestSession(&'a GuestSession, Option<&'a GuestLink>),
     GuestLink(&'a GuestLink),
     AppToken(&'a AppToken),
     Ip(&'a IpSession),
     AllowedNetwork,
+    None,
 }
 
 impl<'a> AccessLevel<'a> {
     pub fn new(config: &Config, data: &'a Data, request: &RequestInfo) -> Self {
+        let guest_link = data.valid_guest_link(request.arrival, &request.url());
+
         if let Some(login_session_hash) = request.login_session_hash {
             if let Some(login_session) =
                 data.valid_login_session(request.arrival, login_session_hash)
             {
-                return AccessLevel::LoginSession(login_session);
+                return AccessLevel::LoginSession(login_session, guest_link);
             }
         }
-
-        let guest_link = data.valid_guest_link(request.arrival, &request.url());
 
         if let Some(guest_session_hash) = request.guest_session_hash {
             if let Some(guest_session) =

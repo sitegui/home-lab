@@ -4,6 +4,7 @@ mod request_info;
 
 use crate::AppState;
 use crate::common::{build_login_redirection, create_cookie};
+use crate::data::GuestLink;
 use crate::servers::forward_auth::access_level::AccessLevel;
 use crate::servers::forward_auth::request_info::RequestInfo;
 use axum::extract::State;
@@ -29,8 +30,9 @@ pub async fn handle_forward_auth(
 
     match access_level {
         AccessLevel::None => build_login_redirection(config, &request.url()),
-        AccessLevel::LoginSession(session) => {
+        AccessLevel::LoginSession(session, guest_link) => {
             let session_hash = session.value_hash;
+            let response = ok_or_redirect(&request, guest_link);
 
             data.update_ip_session(
                 request.client_ip,
@@ -48,9 +50,11 @@ pub async fn handle_forward_auth(
                 );
             }
 
-            StatusCode::OK.into_response()
+            response
         }
         AccessLevel::GuestSession(guest_session, guest_link) => {
+            let response = ok_or_redirect(&request, guest_link);
+
             if let Some(guest_link) = guest_link {
                 let value_hash = guest_session.value_hash;
                 let guest_link_hash = guest_link.url_hash;
@@ -58,7 +62,7 @@ pub async fn handle_forward_auth(
                 data.update_guest_session(value_hash, request.host, guest_link_hash);
             }
 
-            StatusCode::OK.into_response()
+            response
         }
         AccessLevel::GuestLink(guest_link) => {
             let url = request.url();
@@ -122,5 +126,16 @@ pub async fn handle_forward_auth(
             StatusCode::OK.into_response()
         }
         AccessLevel::AllowedNetwork => StatusCode::OK.into_response(),
+    }
+}
+
+fn ok_or_redirect(request: &RequestInfo, guest_link: Option<&GuestLink>) -> Response {
+    match guest_link {
+        None => StatusCode::OK.into_response(),
+        Some(guest_link) => {
+            let url = request.url();
+            let original_url = guest_link.original_url(&url);
+            Redirect::temporary(original_url).into_response()
+        }
     }
 }
