@@ -1,6 +1,6 @@
 mod access_level;
 pub mod logger;
-pub mod request_info;
+mod request_info;
 
 use crate::AppState;
 use crate::common::{build_login_redirection, create_cookie};

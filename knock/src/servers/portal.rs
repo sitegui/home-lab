@@ -1,31 +1,30 @@
 use crate::AppState;
 use crate::common::{build_login_redirection, escape_html};
+use crate::config::Config;
 use crate::data::Data;
 use crate::parse_duration::parse_duration;
-use crate::servers::forward_auth::request_info::RequestInfo;
 use crate::string_hash::StringHash;
 use anyhow::Context;
 use axum::Json;
 use axum::extract::State;
-use axum::http::HeaderMap;
+use axum::http::Uri;
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 pub async fn handle_portal_page(
     cookies: CookieJar,
-    headers: HeaderMap,
+    url: Uri,
     State(state): State<Arc<AppState>>,
 ) -> Response {
     let config = &state.config;
-    println!("{:#?}", headers);
-    let request = unwrap_or_403!(RequestInfo::new(config, &cookies, headers));
 
     let data = state.data.lock();
-    let _ = match valid_login_session(&data, &request) {
+    let _ = match valid_login_session(config, &data, &cookies, Utc::now()) {
         Ok(login_session_hash) => login_session_hash,
-        Err(_) => return build_login_redirection(config, &request.url()),
+        Err(_) => return build_login_redirection(config, &url.to_string()),
     };
 
     let html = unwrap_or_500!(
@@ -54,12 +53,10 @@ pub struct GuestLinkResponse {
 
 pub async fn post_guest_link(
     cookies: CookieJar,
-    headers: HeaderMap,
     State(state): State<Arc<AppState>>,
     Json(body): Json<GuestLinkRequest>,
 ) -> Response {
     let config = &state.config;
-    let request = unwrap_or_403!(RequestInfo::new(config, &cookies, headers));
     let body_expiration = unwrap_or_400!(
         body.expiration
             .map(|expiration| parse_duration(&expiration))
@@ -71,21 +68,28 @@ pub async fn post_guest_link(
     };
 
     let mut data = state.data.lock();
-    let login_session_hash = unwrap_or_403!(valid_login_session(&data, &request));
+    let login_session_hash =
+        unwrap_or_403!(valid_login_session(config, &data, &cookies, Utc::now()));
 
     let new_url = unwrap_or_500!(data.create_guest_link(login_session_hash, body.url, expiration));
 
     Json(GuestLinkResponse { url: new_url }).into_response()
 }
 
-fn valid_login_session(data: &Data, request: &RequestInfo) -> anyhow::Result<StringHash> {
-    let value_hash = request
-        .login_session_hash
-        .context("missing login session hash")?;
+fn valid_login_session(
+    config: &Config,
+    data: &Data,
+    cookies: &CookieJar,
+    now: DateTime<Utc>,
+) -> anyhow::Result<StringHash> {
+    let cookie = cookies
+        .get(&config.login_session_cookie)
+        .context("missing knock cookie")?;
+    let value_hash = StringHash::new(cookie.value());
 
     let session = data
-        .valid_login_session(request.arrival, value_hash)
-        .context("invalid login session")?;
+        .valid_login_session(now, value_hash)
+        .context("invalid knock session")?;
 
     Ok(session.value_hash)
 }
