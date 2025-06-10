@@ -12,6 +12,7 @@ UserNS = keep-id
 Volume = %h/bare/knock/secrets:/secrets
 Environment = ALLOWED_NETWORKS=192.168.1.51
 Environment = COOKIE_DOMAIN=sitegui.dev
+Environment = DATA_FILE=/secrets/data.json
 Environment = FORWARD_AUTH_BIND=0.0.0.0
 Environment = FORWARD_AUTH_LOG_FILE=/secrets/forward_auth.jsonl
 Environment = I18N_LANGUAGE=fr

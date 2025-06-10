@@ -19,6 +19,7 @@ pub async fn handle_portal_page(
     State(state): State<Arc<AppState>>,
 ) -> Response {
     let config = &state.config;
+    println!("{:#?}", headers);
     let request = unwrap_or_403!(RequestInfo::new(config, &cookies, headers));
 
     let data = state.data.lock();
