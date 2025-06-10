@@ -5,7 +5,10 @@ Description = Backup
 WorkingDirectory = %h/home-lab
 ExecStart = %h/home-lab/target/release/home-lab backup
 Restart = on-failure
-RestartSec = 300
+RestartSec = 60
+# Restart at most 5 times
+StartLimitIntervalSec = 1d
+StartLimitBurst = 5
 
 [Install]
 WantedBy = default.target
