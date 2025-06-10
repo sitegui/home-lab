@@ -1,6 +1,7 @@
 use crate::config::Config;
 use anyhow::{Context, anyhow};
-use axum::http::HeaderMap;
+use axum::extract::Path;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::Cookie;
 use chrono::TimeDelta;
@@ -64,4 +65,21 @@ pub fn create_cookie(
         .secure(true)
         .http_only(true)
         .build()
+}
+
+pub async fn handle_static_file(Path(file_name): Path<String>) -> Response {
+    let file_name = file_name.as_str();
+    match file_name {
+        "style.css" => (
+            [("content-type", "text/css")],
+            include_str!("../web/static/style.css"),
+        )
+            .into_response(),
+        "portal.js" => (
+            [("content-type", "application/javascript")],
+            include_str!("../web/static/portal.js"),
+        )
+            .into_response(),
+        _ => StatusCode::NOT_FOUND.into_response(),
+    }
 }

@@ -1,20 +1,31 @@
 use crate::AppState;
-use crate::common::escape_html;
-use crate::config::Config;
+use crate::common::{build_login_redirection, escape_html};
 use crate::data::Data;
 use crate::parse_duration::parse_duration;
+use crate::servers::forward_auth::request_info::RequestInfo;
 use crate::string_hash::StringHash;
 use anyhow::Context;
 use axum::Json;
 use axum::extract::State;
+use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-pub async fn handle_portal_page(State(state): State<Arc<AppState>>) -> Response {
+pub async fn handle_portal_page(
+    cookies: CookieJar,
+    headers: HeaderMap,
+    State(state): State<Arc<AppState>>,
+) -> Response {
     let config = &state.config;
+    let request = unwrap_or_403!(RequestInfo::new(config, &cookies, headers));
+
+    let data = state.data.lock();
+    let _ = match valid_login_session(&data, &request) {
+        Ok(login_session_hash) => login_session_hash,
+        Err(_) => return build_login_redirection(config, &request.url()),
+    };
 
     let html = unwrap_or_500!(
         config
@@ -22,7 +33,7 @@ pub async fn handle_portal_page(State(state): State<Arc<AppState>>) -> Response 
             .translate(&config.i18n_language, include_str!("../../web/portal.html"))
     );
 
-    let data = serde_json::to_string_pretty(&*state.data.lock()).unwrap_or_default();
+    let data = serde_json::to_string_pretty(&*data).unwrap_or_default();
 
     let html = html.replace("{{data}}", &escape_html(&data));
 
@@ -30,22 +41,24 @@ pub async fn handle_portal_page(State(state): State<Arc<AppState>>) -> Response 
 }
 
 #[derive(Deserialize, Debug)]
-pub struct InvitationLinkRequest {
+pub struct GuestLinkRequest {
     url: String,
     expiration: Option<String>,
 }
 
 #[derive(Serialize, Debug)]
-pub struct InvitationLinkResponse {
+pub struct GuestLinkResponse {
     url: String,
 }
 
-pub async fn post_invite_link(
+pub async fn post_guest_link(
     cookies: CookieJar,
+    headers: HeaderMap,
     State(state): State<Arc<AppState>>,
-    Json(body): Json<InvitationLinkRequest>,
+    Json(body): Json<GuestLinkRequest>,
 ) -> Response {
     let config = &state.config;
+    let request = unwrap_or_403!(RequestInfo::new(config, &cookies, headers));
     let body_expiration = unwrap_or_400!(
         body.expiration
             .map(|expiration| parse_duration(&expiration))
@@ -57,28 +70,21 @@ pub async fn post_invite_link(
     };
 
     let mut data = state.data.lock();
-    let now = Utc::now();
-    let login_session_hash = unwrap_or_403!(valid_login_session(config, &data, &cookies, now));
+    let login_session_hash = unwrap_or_403!(valid_login_session(&data, &request));
 
     let new_url = unwrap_or_500!(data.create_guest_link(login_session_hash, body.url, expiration));
 
-    Json(InvitationLinkResponse { url: new_url }).into_response()
+    Json(GuestLinkResponse { url: new_url }).into_response()
 }
 
-fn valid_login_session(
-    config: &Config,
-    data: &Data,
-    cookies: &CookieJar,
-    now: DateTime<Utc>,
-) -> anyhow::Result<StringHash> {
-    let cookie = cookies
-        .get(&config.login_session_cookie)
-        .context("missing knock cookie")?;
-    let value_hash = StringHash::new(cookie.value());
+fn valid_login_session(data: &Data, request: &RequestInfo) -> anyhow::Result<StringHash> {
+    let value_hash = request
+        .login_session_hash
+        .context("missing login session hash")?;
 
     let session = data
-        .valid_login_session(now, value_hash)
-        .context("invalid knock session")?;
+        .valid_login_session(request.arrival, value_hash)
+        .context("invalid login session")?;
 
     Ok(session.value_hash)
 }

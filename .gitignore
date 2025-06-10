@@ -1,5 +1,6 @@
-/target
-/knock/target
-/scripts/target
 /.idea
 /data
+/knock/data
+/knock/target
+/scripts/target
+/target

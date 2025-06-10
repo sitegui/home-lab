@@ -63,6 +63,7 @@ impl Config {
         let allowed_networks = config
             .allowed_networks
             .split(',')
+            .filter(|network| !network.is_empty())
             .map(|network| network.parse())
             .collect::<anyhow::Result<_, _>>()?;
 

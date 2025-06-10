@@ -13,13 +13,14 @@ mod string_hash;
 mod terminate;
 mod throttle;
 
+use crate::common::handle_static_file;
 use crate::config::Config;
 use crate::data::Data;
 use crate::persistence::load_and_spawn_persist_loop;
 use crate::servers::forward_auth::handle_forward_auth;
 use crate::servers::forward_auth::logger::Logger;
 use crate::servers::login::{handle_login_action, handle_login_page};
-use crate::servers::portal::{handle_portal_page, post_invite_link};
+use crate::servers::portal::{handle_portal_page, post_guest_link};
 use crate::terminate::TERMINATE;
 use crate::throttle::Throttle;
 use axum::Router;
@@ -76,6 +77,7 @@ async fn main() -> anyhow::Result<()> {
 
     let login_router = Router::new()
         .route("/", get(handle_login_page).post(handle_login_action))
+        .route("/static/{file}", get(handle_static_file))
         .with_state(state.clone());
     tracing::info!("Login listening on {}", login_listener.local_addr()?);
     let login_server = tokio::spawn(
@@ -86,9 +88,10 @@ async fn main() -> anyhow::Result<()> {
 
     let portal_router = Router::new()
         .route("/", get(handle_portal_page))
-        .route("/api/v1/invite-link", post(post_invite_link))
+        .route("/api/v1/guest-link", post(post_guest_link))
+        .route("/static/{file}", get(handle_static_file))
         .with_state(state.clone());
-    tracing::info!("Login listening on {}", portal_listener.local_addr()?);
+    tracing::info!("Portal listening on {}", portal_listener.local_addr()?);
     let portal_server = tokio::spawn(
         axum::serve(portal_listener, portal_router)
             .with_graceful_shutdown(TERMINATE.wait())

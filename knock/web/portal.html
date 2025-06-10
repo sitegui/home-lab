@@ -4,18 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>[[Knock portal]]</title>
-
-    <style>
-        body {
-            font-size: 18px;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-    </style>
+    <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
+<h1>[[Knock portal]]</h1>
+
+<h2>[[Create guest link]]</h2>
+<form id="guest-form">
+    <div class="field">
+        <label for="guest-url">[[Link:]]</label>
+        <input type="text" id="guest-url" required/>
+    </div>
+    <div class="field">
+        <label for="guest-expiration">[[Expiration (days):]]</label>
+        <input type="number" id="guest-expiration" required min="1" max="365" step="1" value="30">
+    </div>
+    <button type="submit" id="guest-submit">[[Create]]</button>
+
+    <p id="guest-output-container" style="display: none">
+        Created link: <span id="guest-output"></span>
+    </p>
+
+    <p id="guest-error" style="display: none" class="error">[[Failed to process request]]</p>
+</form>
+
+<h2>[[Active sessions]]</h2>
 <pre>{{data}}</pre>
+
+<script src="static/portal.js"></script>
 </body>
 </html>
