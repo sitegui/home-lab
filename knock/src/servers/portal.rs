@@ -1,5 +1,5 @@
 use crate::AppState;
-use crate::common::{build_login_redirection, escape_html};
+use crate::common::{build_login_redirection, escape_html, read_header};
 use crate::config::Config;
 use crate::data::Data;
 use crate::parse_duration::parse_duration;
@@ -7,7 +7,7 @@ use crate::string_hash::StringHash;
 use anyhow::Context;
 use axum::Json;
 use axum::extract::State;
-use axum::http::Uri;
+use axum::http::{HeaderMap, Uri};
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 pub async fn handle_portal_page(
     cookies: CookieJar,
+    headers: HeaderMap,
     url: Uri,
     State(state): State<Arc<AppState>>,
 ) -> Response {
@@ -24,7 +25,14 @@ pub async fn handle_portal_page(
     let data = state.data.lock();
     let _ = match valid_login_session(config, &data, &cookies, Utc::now()) {
         Ok(login_session_hash) => login_session_hash,
-        Err(_) => return build_login_redirection(config, &url.to_string()),
+        Err(_) => {
+            let host = unwrap_or_403!(read_header(&headers, "x-forwarded-host"));
+            let proto = unwrap_or_403!(read_header(&headers, "x-forwarded-proto"));
+            return build_login_redirection(
+                config,
+                &format!("{}://{}{}", proto, host, url),
+            );
+        }
     };
 
     let html = unwrap_or_500!(
