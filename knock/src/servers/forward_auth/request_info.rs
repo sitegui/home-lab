@@ -31,7 +31,7 @@ impl RequestInfo {
         let guest_session_hash = cookies
             .get(&config.guest_session_cookie)
             .map(|cookie| StringHash::new(cookie.value()));
-        let app_token_hash = read_header(&headers, "authentication")
+        let app_token_hash = read_header(&headers, "authorization")
             .ok()
             .map(|auth| StringHash::new(&format!("{},{}", host, auth)));
 
