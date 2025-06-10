@@ -18,6 +18,7 @@ Environment = I18N_LANGUAGE=fr
 Environment = LOGIN_BIND=0.0.0.0
 Environment = LOGIN_HOSTNAME=https://login.sitegui.dev
 Environment = PORTAL_BIND=0.0.0.0
+Environment = USERS_FILE=/secrets/users.txt
 Environment = VALID_HOSTS=films.sitegui.dev,docs.sitegui.dev,knock.sitegui.dev
 Network = caddy-knock.network
 
