@@ -1,11 +1,11 @@
 use crate::AppState;
-use crate::common::{create_cookie, escape_html, read_client_ip};
+use crate::common::{check_valid_host, create_cookie, escape_html, read_client_ip};
 use crate::config::Config;
 use crate::data::{Ip, User};
-use anyhow::{Context, ensure};
+use anyhow::Context;
 use axum::Form;
 use axum::extract::{Query, State};
-use axum::http::{HeaderMap, StatusCode, Uri};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::CookieJar;
 use chrono::Utc;
@@ -46,7 +46,7 @@ pub async fn handle_login_action(
 
     state.throttle.wait(config.login_throttle).await;
 
-    unwrap_or_400!(validate_callback(config, &callback).context("callback is invalid"));
+    unwrap_or_400!(check_valid_host(config, &callback).context("callback is invalid"));
 
     let username = username.trim().to_string();
 
@@ -124,13 +124,6 @@ pub async fn handle_login_action(
     let cookies = cookies.add(cookie);
 
     (cookies, Redirect::temporary(&callback)).into_response()
-}
-
-fn validate_callback(config: &Config, callback: &str) -> anyhow::Result<()> {
-    let uri: Uri = callback.parse()?;
-    let host = uri.host().context("missing host")?;
-    ensure!(config.valid_hosts.contains(host));
-    Ok(())
 }
 
 fn render_login_page(config: &Config, callback: &str) -> Response {

@@ -1,5 +1,5 @@
 use crate::AppState;
-use crate::common::{build_login_redirection, escape_html, read_header};
+use crate::common::{build_login_redirection, check_valid_host, escape_html, read_header};
 use crate::config::Config;
 use crate::data::Data;
 use crate::parse_duration::parse_duration;
@@ -28,10 +28,7 @@ pub async fn handle_portal_page(
         Err(_) => {
             let host = unwrap_or_403!(read_header(&headers, "x-forwarded-host"));
             let proto = unwrap_or_403!(read_header(&headers, "x-forwarded-proto"));
-            return build_login_redirection(
-                config,
-                &format!("{}://{}{}", proto, host, url),
-            );
+            return build_login_redirection(config, &format!("{}://{}{}", proto, host, url));
         }
     };
 
@@ -79,6 +76,7 @@ pub async fn post_guest_link(
     let login_session_hash =
         unwrap_or_403!(valid_login_session(config, &data, &cookies, Utc::now()));
 
+    unwrap_or_400!(check_valid_host(config, &body.url).context("host is invalid"));
     let new_url = unwrap_or_500!(data.create_guest_link(login_session_hash, body.url, expiration));
 
     Json(GuestLinkResponse { url: new_url }).into_response()

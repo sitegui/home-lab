@@ -1,7 +1,7 @@
 use crate::config::Config;
-use anyhow::{Context, anyhow};
+use anyhow::{Context, anyhow, ensure};
 use axum::extract::Path;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::{HeaderMap, StatusCode, Uri};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::Cookie;
 use chrono::TimeDelta;
@@ -82,4 +82,11 @@ pub async fn handle_static_file(Path(file_name): Path<String>) -> Response {
             .into_response(),
         _ => StatusCode::NOT_FOUND.into_response(),
     }
+}
+
+pub fn check_valid_host(config: &Config, url: &str) -> anyhow::Result<()> {
+    let uri: Uri = url.parse()?;
+    let host = uri.host().context("missing host")?;
+    ensure!(config.valid_hosts.contains(host));
+    Ok(())
 }

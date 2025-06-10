@@ -21,7 +21,7 @@ document.getElementById('guest-form').addEventListener('submit', (event) => {
     if (!response.ok) {
       throw new Error(response.statusText)
     }
-    response.json()
+    return response.json()
   }).then(response => {
     show(outputContainerEl)
     outputEl.textContent = response.url
