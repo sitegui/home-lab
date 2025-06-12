@@ -55,6 +55,10 @@ impl<T: MapItem> Map<T> {
     pub fn insert(&mut self, item: T) {
         self.0.insert(item.key().clone(), item);
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.0.values()
+    }
 }
 
 impl<T: MapItem> Serialize for Map<T> {

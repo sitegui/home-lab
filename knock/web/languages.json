@@ -1,18 +1,34 @@
 {
   "en": {
-    "en": "en",
-    "You need to authenticate": "You need to authenticate",
-    "Username:": "Username:",
-    "Code:": "Code:",
     "6 digits": "6 digits",
-    "Login": "Login"
+    "Active sessions": "Active sessions",
+    "Code:": "Code:",
+    "Create guest link": "Create guest link",
+    "Create": "Create",
+    "Created link:": "Created link:",
+    "Expiration (days):": "Expiration (days):",
+    "Failed to process request": "Failed to process request",
+    "Knock portal": "Knock portal",
+    "Link:": "Link:",
+    "Login": "Login",
+    "Username:": "Username:",
+    "You need to authenticate": "You need to authenticate",
+    "en": "en"
   },
   "fr": {
-    "en": "fr",
-    "You need to authenticate": "Vous devez vous authentifier",
-    "Username:": "Nom d'utilisateur :",
-    "Code:": "Code :",
     "6 digits": "6 chiffres",
-    "Login": "Connexion"
+    "Active sessions": "Sessions actives",
+    "Code:": "Code :",
+    "Create guest link": "Créer un lien d'invité",
+    "Create": "Créer",
+    "Created link:": "Lien créé :",
+    "Expiration (days):": "Expiration (jours) :",
+    "Failed to process request": "Impossible de traiter la requête",
+    "Knock portal": "Portail Knock",
+    "Link:": "Lien :",
+    "Login": "Connexion",
+    "Username:": "Nom d'utilisateur :",
+    "You need to authenticate": "Vous devez vous authentifier",
+    "en": "fr"
   }
 }

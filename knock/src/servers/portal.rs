@@ -12,6 +12,8 @@ use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::net::IpAddr;
 use std::sync::Arc;
 
 pub async fn handle_portal_page(
@@ -23,8 +25,8 @@ pub async fn handle_portal_page(
     let config = &state.config;
 
     let data = state.data.lock();
-    let _ = match valid_login_session(config, &data, &cookies, Utc::now()) {
-        Ok(login_session_hash) => login_session_hash,
+    let user_name = match valid_login_session(config, &data, &cookies, Utc::now()) {
+        Ok((user_name, _)) => user_name,
         Err(_) => {
             let host = unwrap_or_403!(read_header(&headers, "x-forwarded-host"));
             let proto = unwrap_or_403!(read_header(&headers, "x-forwarded-proto"));
@@ -38,9 +40,28 @@ pub async fn handle_portal_page(
             .translate(&config.i18n_language, include_str!("../../web/portal.html"))
     );
 
-    let data = serde_json::to_string_pretty(&*data).unwrap_or_default();
+    #[derive(Serialize)]
+    struct LoginSessionData {
+        origin_ip: IpAddr,
+        created_at: DateTime<Utc>,
+        expires_at: DateTime<Utc>,
+    }
 
-    let html = html.replace("{{data}}", &escape_html(&data));
+    let mut login_sessions = Vec::new();
+    let mut login_session_hashes = HashSet::new();
+    for session in data.login_sessions.iter() {
+        if session.user_name == user_name {
+            login_sessions.push(LoginSessionData {
+                origin_ip: session.origin_ip,
+                created_at: session.created_at,
+                expires_at: session.expires_at,
+            });
+            login_session_hashes.insert(session.value_hash);
+        }
+    }
+    let login_sessions_str = serde_json::to_string_pretty(&login_sessions).unwrap_or_default();
+
+    let html = html.replace("{{login_sessions}}", &escape_html(&login_sessions_str));
 
     ([("content-type", "text/html")], html).into_response()
 }
@@ -73,7 +94,7 @@ pub async fn post_guest_link(
     };
 
     let mut data = state.data.lock();
-    let login_session_hash =
+    let (_, login_session_hash) =
         unwrap_or_403!(valid_login_session(config, &data, &cookies, Utc::now()));
 
     unwrap_or_400!(check_valid_host(config, &body.url).context("host is invalid"));
@@ -87,7 +108,7 @@ fn valid_login_session(
     data: &Data,
     cookies: &CookieJar,
     now: DateTime<Utc>,
-) -> anyhow::Result<StringHash> {
+) -> anyhow::Result<(String, StringHash)> {
     let cookie = cookies
         .get(&config.login_session_cookie)
         .context("missing knock cookie")?;
@@ -97,5 +118,5 @@ fn valid_login_session(
         .valid_login_session(now, value_hash)
         .context("invalid knock session")?;
 
-    Ok(session.value_hash)
+    Ok((session.user_name.clone(), session.value_hash))
 }

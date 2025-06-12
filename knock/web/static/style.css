@@ -20,11 +20,13 @@ body {
 }
 
 form {
-    max-width: 300px;
-    margin: auto;
-
     border: 1px solid #ccc;
     padding: 1em;
+}
+
+.login-form {
+    max-width: 300px;
+    margin: auto;
 }
 
 label {
