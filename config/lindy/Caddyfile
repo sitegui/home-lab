@@ -1,4 +1,4 @@
-http://0.0.0.0:8000 {
+:8000 {
     root * /app/lindy
     file_server
 }
