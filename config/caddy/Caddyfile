@@ -72,3 +72,10 @@ knock.sitegui.dev {
 
     reverse_proxy knock:8082
 }
+
+lindy.sitegui.dev {
+    import external_sockets
+    import logging
+
+    reverse_proxy lindy:8000
+}
