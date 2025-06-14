@@ -1,14 +1,45 @@
 use crate::child::Child;
+use crate::error::error_messages;
 use crate::home::home;
 use crate::mount::mount_source;
+use crate::notifications::{Notifier, Priority};
 use anyhow::{Context, bail, ensure};
 use chrono::Utc;
 use itertools::Itertools;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 pub fn backup() -> anyhow::Result<()> {
+    let start = Instant::now();
     let home = home()?;
+
+    let result = backup_inner(&home);
+    let elapsed_minutes = start.elapsed().as_secs_f64() / 60.0;
+
+    let (title, message, priority) = match &result {
+        Ok(_) => (
+            "Backup successful".to_string(),
+            format!("It took {:.1} minutes", elapsed_minutes),
+            Priority::Low,
+        ),
+        Err(error) => (
+            "Backup failed".to_string(),
+            error_messages(&error),
+            Priority::High,
+        ),
+    };
+
+    if let Err(notification_error) = Notifier::new(&home)
+        .and_then(|notifier| notifier.send_notification(title, message, priority))
+    {
+        tracing::warn!("Failed to send notification: {:?}", notification_error);
+    }
+
+    result
+}
+
+fn backup_inner(home: &Path) -> anyhow::Result<()> {
     let protected_dir = home.join("protected");
 
     mount_source(&protected_dir).context("protected disk does not seem to be mounted")?;

@@ -1,7 +1,9 @@
 mod child;
+mod error;
 mod home;
 mod list_files;
 mod mount;
+mod notifications;
 mod scripts;
 
 use crate::scripts::backup::backup;
