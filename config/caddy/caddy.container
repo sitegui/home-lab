@@ -14,6 +14,7 @@ Volume = %h/home-lab/config/caddy/Caddyfile:/etc/caddy/Caddyfile
 Volume = %h/bare/caddy/data:/data
 Volume = %h/bare/caddy/config:/config
 Network = caddy.network
+Network = caddy-gotify.network
 Network = caddy-jellyfin.network
 Network = caddy-knock.network
 Network = caddy-lindy.network

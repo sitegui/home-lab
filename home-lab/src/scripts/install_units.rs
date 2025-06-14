@@ -7,6 +7,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
+    // TODO: pull new container images when Pull = never
+
     let path = path.as_deref().unwrap_or(Path::new("config"));
     let files = if path.metadata()?.is_file() {
         vec![path.to_owned()]
@@ -64,16 +66,16 @@ pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
         for unit in updated_units {
             if let Some(enable_name) = unit.enable_name {
                 tracing::info!("Enabling {}", enable_name);
-                // Child::new("systemctl")
-                //     .args(["--user", "enable", &enable_name])
-                //     .run()?;
+                Child::new("systemctl")
+                    .args(["--user", "enable", &enable_name])
+                    .run()?;
             }
             if let Some(restart_name) = unit.restart_name {
                 tracing::info!("Restarting {}", restart_name);
-                // Child::new("systemctl")
-                //     .args(["--user", "restart", &restart_name])
-                //     .ignore_status()
-                //     .run()?;
+                Child::new("systemctl")
+                    .args(["--user", "restart", &restart_name])
+                    .ignore_status()
+                    .run()?;
             }
         }
     }
@@ -84,7 +86,6 @@ pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
 #[derive(Debug)]
 struct UnitFile {
     target_path: PathBuf,
-    kind: UnitKind,
     enable_name: Option<String>,
     restart_name: Option<String>,
     contents: String,
@@ -130,6 +131,12 @@ impl UnitFile {
                     .context("invalid container name")?;
                 Some(format!("{}.service", base_name))
             }
+            UnitKind::Network => {
+                let base_name = name
+                    .strip_suffix(".container")
+                    .context("invalid container name")?;
+                Some(format!("{}-network.service", base_name))
+            }
             _ => None,
         };
 
@@ -140,7 +147,6 @@ impl UnitFile {
             restart_name,
             target_path,
             contents,
-            kind,
         })
     }
 }
