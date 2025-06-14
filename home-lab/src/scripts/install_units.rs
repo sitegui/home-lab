@@ -133,8 +133,8 @@ impl UnitFile {
             }
             UnitKind::Network => {
                 let base_name = name
-                    .strip_suffix(".container")
-                    .context("invalid container name")?;
+                    .strip_suffix(".network")
+                    .context("invalid network name")?;
                 Some(format!("{}-network.service", base_name))
             }
             _ => None,
