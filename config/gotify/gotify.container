@@ -1,0 +1,16 @@
+[Unit]
+
+[Service]
+Restart = always
+RestartSec = 10
+
+[Container]
+ContainerName = gotify
+Image = docker.io/gotify/server:2
+Pull = never
+AutoUpdate = local
+Volume = %h/protected/gotify/data:/app/data
+Network = caddy-gotify.network
+
+[Install]
+WantedBy = protected.target

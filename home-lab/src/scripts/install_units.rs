@@ -22,19 +22,19 @@ pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
 
     let units: Vec<_> = files
         .into_iter()
-        .filter(|file| {
-            let Some(extension) = file.extension() else {
-                return false;
+        .filter_map(|file| {
+            let kind = match file.extension()?.to_str()? {
+                "target" => UnitKind::Target,
+                "service" => UnitKind::Service,
+                "network" => UnitKind::Network,
+                "container" => UnitKind::Container,
+                "socket" => UnitKind::Socket,
+                "timer" => UnitKind::Timer,
+                _ => return None,
             };
 
-            extension == "target"
-                || extension == "service"
-                || extension == "network"
-                || extension == "container"
-                || extension == "socket"
-                || extension == "timer"
+            Some(UnitFile::new(&containers_dir, &user_dir, file, kind))
         })
-        .map(|file| UnitFile::new(&containers_dir, &user_dir, file))
         .try_collect()?;
 
     tracing::info!("Detected {} units", units.len());
@@ -64,16 +64,16 @@ pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
         for unit in updated_units {
             if let Some(enable_name) = unit.enable_name {
                 tracing::info!("Enabling {}", enable_name);
-                Child::new("systemctl")
-                    .args(["--user", "enable", &enable_name])
-                    .run()?;
+                // Child::new("systemctl")
+                //     .args(["--user", "enable", &enable_name])
+                //     .run()?;
             }
             if let Some(restart_name) = unit.restart_name {
                 tracing::info!("Restarting {}", restart_name);
-                Child::new("systemctl")
-                    .args(["--user", "restart", &restart_name])
-                    .ignore_status()
-                    .run()?;
+                // Child::new("systemctl")
+                //     .args(["--user", "restart", &restart_name])
+                //     .ignore_status()
+                //     .run()?;
             }
         }
     }
@@ -84,41 +84,53 @@ pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
 #[derive(Debug)]
 struct UnitFile {
     target_path: PathBuf,
+    kind: UnitKind,
     enable_name: Option<String>,
     restart_name: Option<String>,
     contents: String,
 }
 
+#[derive(Debug, Copy, Clone)]
+enum UnitKind {
+    Target,
+    Service,
+    Network,
+    Container,
+    Socket,
+    Timer,
+}
+
 impl UnitFile {
-    fn new(containers_dir: &Path, user_dir: &Path, source_path: PathBuf) -> anyhow::Result<Self> {
-        let extension = source_path.extension().context("missing extension")?;
+    fn new(
+        containers_dir: &Path,
+        user_dir: &Path,
+        source_path: PathBuf,
+        kind: UnitKind,
+    ) -> anyhow::Result<Self> {
         let name = source_path
             .file_name()
             .context("missing file name")?
             .to_str()
             .context("invalid file name")?;
-        let target_path = if extension == "network" || extension == "container" {
-            containers_dir.join(name)
-        } else {
-            user_dir.join(name)
+        let target_path = match kind {
+            UnitKind::Network | UnitKind::Container => containers_dir.join(name),
+            _ => user_dir.join(name),
         };
 
-        let enable_name = if extension == "service" || extension == "socket" || extension == "timer"
-        {
-            Some(name.to_string())
-        } else {
-            None
+        let enable_name = match kind {
+            UnitKind::Service | UnitKind::Socket | UnitKind::Timer => Some(name.to_string()),
+            _ => None,
         };
 
-        let restart_name = if extension == "service" || extension == "timer" {
-            Some(name.to_string())
-        } else if extension == "container" {
-            let base_name = name
-                .strip_suffix(".container")
-                .context("invalid container name")?;
-            Some(format!("{}.service", base_name))
-        } else {
-            None
+        let restart_name = match kind {
+            UnitKind::Service | UnitKind::Timer => Some(name.to_string()),
+            UnitKind::Container => {
+                let base_name = name
+                    .strip_suffix(".container")
+                    .context("invalid container name")?;
+                Some(format!("{}.service", base_name))
+            }
+            _ => None,
         };
 
         let contents = fs::read_to_string(&source_path)?;
@@ -128,6 +140,7 @@ impl UnitFile {
             restart_name,
             target_path,
             contents,
+            kind,
         })
     }
 }

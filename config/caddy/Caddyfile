@@ -79,3 +79,11 @@ lindy.sitegui.dev {
 
     reverse_proxy lindy:8000
 }
+
+notifications.sitegui.dev {
+    import external_sockets
+    import logging
+    import auth
+
+    reverse_proxy gotify:80
+}
