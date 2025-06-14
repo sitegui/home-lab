@@ -23,7 +23,9 @@ impl Notifier {
     /// Create a new instance, reading the token from `~/bare/home-lab-gotify-token.txt`
     pub fn new(home: &Path) -> anyhow::Result<Self> {
         let token = fs::read_to_string(home.join("bare/home-lab-gotify-token.txt"))
-            .context("could not read token")?;
+            .context("could not read token")?
+            .trim()
+            .to_string();
         Ok(Self {
             client: Client::builder().timeout(Duration::from_secs(5)).build()?,
             host: "https://notifications.sitegui.dev".to_string(),
