@@ -6,9 +6,9 @@ use crate::notifications::{Notifier, Priority};
 use anyhow::{Context, bail, ensure};
 use chrono::Utc;
 use itertools::Itertools;
-use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Instant;
+use std::time::{Duration, Instant};
+use std::{fs, thread};
 
 pub fn backup() -> anyhow::Result<()> {
     let start = Instant::now();
@@ -25,14 +25,12 @@ pub fn backup() -> anyhow::Result<()> {
         ),
         Err(error) => (
             "Backup failed".to_string(),
-            error_messages(&error),
+            error_messages(error),
             Priority::High,
         ),
     };
 
-    if let Err(notification_error) = Notifier::new(&home)
-        .and_then(|notifier| notifier.send_notification(title, message, priority))
-    {
+    if let Err(notification_error) = send_notification(&home, title, message, priority) {
         tracing::warn!("Failed to send notification: {:?}", notification_error);
     }
 
@@ -49,9 +47,9 @@ fn backup_inner(home: &Path) -> anyhow::Result<()> {
     fs::write(protected_dir.join("last-backup-attempt.txt"), &now)
         .context("failed to write last-backup-attempt.txt")?;
 
-    let backup_disk = BackupDisk::mount_one(&home)?;
-    let backup_dir = backup_disk.backup_dir(&home);
-    let stopped_services = stop_containers(&home)?;
+    let backup_disk = BackupDisk::mount_one(home)?;
+    let backup_dir = backup_disk.backup_dir(home);
+    let stopped_services = stop_containers(home)?;
 
     let mut child = Child::new("rsync")
         .arg(home.join("bare"))
@@ -86,7 +84,7 @@ fn backup_inner(home: &Path) -> anyhow::Result<()> {
 
     tracing::info!("Will unmount backup");
     Child::new("sudo")
-        .arg(backup_disk.unmount_script(&home))
+        .arg(backup_disk.unmount_script(home))
         .run()?;
 
     Ok(())
@@ -202,4 +200,33 @@ impl Drop for StartServicesOnDrop {
             tracing::error!("Failed to start services: {:?}", error);
         }
     }
+}
+
+fn send_notification(
+    home: &Path,
+    title: String,
+    message: String,
+    priority: Priority,
+) -> anyhow::Result<()> {
+    let notifier = Notifier::new(home)?;
+
+    // Since the backup logic had to stop all services, we'll wait a bit for the notification server
+    // to be healthy
+    let give_up_at = Instant::now() + Duration::from_secs(60);
+    let pooling = Duration::from_secs(2);
+    loop {
+        thread::sleep(pooling);
+        if Instant::now() > give_up_at {
+            bail!("Gave up waiting for notification service to be healthy");
+        }
+
+        match notifier.is_healthy() {
+            Err(error) => {
+                tracing::info!("Notification service is not yet available: {}", error)
+            }
+            Ok(_) => break,
+        }
+    }
+
+    notifier.send_notification(title, message, priority)
 }
