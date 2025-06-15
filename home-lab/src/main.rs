@@ -19,8 +19,14 @@ use std::path::PathBuf;
 enum Cli {
     /// Unlock the internal disk and start up the other services
     Unlock,
-    /// Run the backup, copying local files into one of the backup disks
-    Backup,
+    /// Run the backup, copying local files into one of the backup disks, then check a given
+    /// percentage of the files
+    Backup {
+        #[clap(long, default_value_t = 1.0)]
+        check_percentage: f64,
+        #[clap(long)]
+        check_only: bool,
+    },
     /// Copy all sudo scripts to ~/sudo-scripts and edit the sudoers file to enable running them
     InstallSudoScripts,
     /// Copy all systemd unit files to the user folder, enable them and restart the impacted
@@ -53,7 +59,10 @@ fn main() -> anyhow::Result<()> {
 
     match Cli::parse() {
         Cli::Unlock => unlock()?,
-        Cli::Backup => backup()?,
+        Cli::Backup {
+            check_percentage,
+            check_only,
+        } => backup(check_percentage, check_only)?,
         Cli::InstallSudoScripts => install_sudo_scripts()?,
         Cli::InstallUnits { force, path } => install_units(force, path)?,
         Cli::CompileNextcloudUnits {
