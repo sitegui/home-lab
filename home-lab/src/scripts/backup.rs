@@ -3,7 +3,7 @@ use crate::error::error_messages;
 use crate::home::home;
 use crate::mount::mount_source;
 use crate::notifications::{Notifier, Priority};
-use crate::scripts::backup::check_files::check_files;
+use crate::scripts::backup::check_files::{CheckStats, check_files};
 use anyhow::{Context, bail, ensure};
 use backup_disk::BackupDisk;
 use chrono::Utc;
@@ -23,11 +23,21 @@ pub fn backup(check_percentage: f64, check_only: bool) -> anyhow::Result<()> {
     let elapsed_minutes = start.elapsed().as_secs_f64() / 60.0;
 
     let (title, message, priority) = match &result {
-        Ok(_) => (
-            "Backup successful".to_string(),
-            format!("It took {:.1} minutes", elapsed_minutes),
-            Priority::Low,
-        ),
+        Ok(stats) => {
+            if stats.bad == 0 {
+                (
+                    format!("Backup successful ({} files checked)", stats.good),
+                    format!("It took {:.1} minutes", elapsed_minutes),
+                    Priority::Low,
+                )
+            } else {
+                (
+                    format!("Backup executed, but {} files failed check", stats.bad),
+                    format!("It took {:.1} minutes", elapsed_minutes),
+                    Priority::Low,
+                )
+            }
+        }
         Err(error) => (
             "Backup failed".to_string(),
             error_messages(error),
@@ -39,10 +49,14 @@ pub fn backup(check_percentage: f64, check_only: bool) -> anyhow::Result<()> {
         tracing::warn!("Failed to send notification: {:?}", notification_error);
     }
 
-    result
+    result.map(|_| ())
 }
 
-fn backup_inner(home: &Path, check_percentage: f64, check_only: bool) -> anyhow::Result<()> {
+fn backup_inner(
+    home: &Path,
+    check_percentage: f64,
+    check_only: bool,
+) -> anyhow::Result<CheckStats> {
     let protected_dir = home.join("protected");
 
     mount_source(&protected_dir).context("protected disk does not seem to be mounted")?;
@@ -88,14 +102,15 @@ fn backup_inner(home: &Path, check_percentage: f64, check_only: bool) -> anyhow:
         tracing::info!("Witness file has expected content, backup is up to date");
     }
 
-    check_files(home, check_percentage, backup_disk)?;
+    let check_stats = check_files(home, check_percentage, backup_disk)?;
+    tracing::info!("Backup check stats: {:?}", check_stats);
 
     tracing::info!("Will unmount backup");
     Child::new("sudo")
         .arg(backup_disk.unmount_script(home))
         .run()?;
 
-    Ok(())
+    Ok(check_stats)
 }
 
 fn send_notification(
