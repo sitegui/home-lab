@@ -1,0 +1,18 @@
+[Unit]
+
+[Service]
+Restart = always
+RestartSec = 10
+
+[Container]
+ContainerName = node-exporter
+Image = quay.io/prometheus/node-exporter:latest
+Pull = never
+AutoUpdate = local
+Volume = /:/rootfs:ro,rslave
+Exec = --path.rootfs=/rootfs
+Network=host
+PodmanArgs = --pid=host
+
+[Install]
+WantedBy = default.target
