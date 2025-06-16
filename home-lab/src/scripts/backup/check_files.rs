@@ -1,4 +1,5 @@
 use crate::scripts::backup::backup_disk::BackupDisk;
+use anyhow::{Context, ensure};
 use itertools::Itertools;
 use rand::prelude::IndexedRandom;
 use rand::rng;
@@ -31,13 +32,8 @@ pub fn check_files(
     for original in selected_files {
         let backup = backup_dir.join(original.strip_prefix(home)?);
 
-        let original_hash = hash_file(original)?;
-        let backup_hash = hash_file(&backup)?;
-        if original_hash != backup_hash {
-            tracing::warn!(
-                "File {} does not have the same contents in the backup disk",
-                original.display()
-            );
+        if let Err(error) = check_file(original, &backup) {
+            tracing::error!("File check failed for '{}': {}", original.display(), error);
             bad += 1;
         } else {
             good += 1;
@@ -45,6 +41,14 @@ pub fn check_files(
     }
 
     Ok(CheckStats { good, bad })
+}
+
+fn check_file(original_path: &Path, backup_path: &Path) -> anyhow::Result<()> {
+    let original_hash = hash_file(original_path).context("failed to hash original")?;
+    let backup_hash = hash_file(backup_path).context("failed to hash backup")?;
+    ensure!(original_hash == backup_hash, "contents are different");
+
+    Ok(())
 }
 
 fn hash_file(file_path: &Path) -> anyhow::Result<Output<Sha1>> {

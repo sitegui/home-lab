@@ -46,5 +46,8 @@ pub fn stop_containers(home: &Path) -> anyhow::Result<StartServicesOnDrop> {
         .args(&container_services)
         .run()?;
 
+    // TODO: debug if all containers are stopped
+    Child::new("podman").arg("ps").run()?;
+
     Ok(StartServicesOnDrop(container_services))
 }
