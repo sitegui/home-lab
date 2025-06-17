@@ -62,6 +62,7 @@ fn backup_inner(
     mount_source(&protected_dir).context("protected disk does not seem to be mounted")?;
     let backup_disk = BackupDisk::mount_one(home)?;
 
+    let mut stopped_services = None;
     if !check_only {
         let now = format!("{}\n", Utc::now());
         tracing::info!("Starting backup at {}", now.trim());
@@ -69,7 +70,7 @@ fn backup_inner(
             .context("failed to write last-backup-attempt.txt")?;
 
         let backup_dir = backup_disk.backup_dir(home);
-        let stopped_services = start_services_on_drop::stop_containers(home)?;
+        stopped_services = Some(start_services_on_drop::stop_containers(home)?);
 
         let mut child = Child::new("rsync")
             .args(backup_disk.source_dirs(home))
@@ -84,8 +85,6 @@ fn backup_inner(
         }
 
         child.run()?;
-
-        drop(stopped_services);
 
         let last_successful_backup = protected_dir.join("last-successful-backup.txt");
         fs::copy(
@@ -104,6 +103,7 @@ fn backup_inner(
 
     let check_stats = check_files(home, check_percentage, backup_disk)?;
     tracing::info!("Backup check stats: {:?}", check_stats);
+    drop(stopped_services);
 
     tracing::info!("Will unmount backup");
     Child::new("sudo")
