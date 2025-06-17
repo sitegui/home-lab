@@ -20,6 +20,7 @@ Network = caddy-knock.network
 Network = caddy-lindy.network
 Network = caddy-lldap.network
 Network = caddy-nextcloud.network
+Network = caddy-prometheus.network
 
 [Install]
 WantedBy = default.target

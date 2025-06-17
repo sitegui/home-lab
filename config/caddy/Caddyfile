@@ -34,6 +34,10 @@
     }
 }
 
+#
+# Public services
+#
+
 films.sitegui.dev {
     import external_sockets
     import logging
@@ -48,14 +52,6 @@ docs.sitegui.dev {
     import auth
 
     reverse_proxy nextcloud-aio-apache:11000
-}
-
-# The port 8080 is configured at the firewall level to only be open for ips from the internal network
-ldap.sitegui.dev:8080 {
-    import internal_sockets
-    import logging
-
-    reverse_proxy lldap:17170
 }
 
 login.sitegui.dev {
@@ -86,4 +82,24 @@ notifications.sitegui.dev {
     import auth
 
     reverse_proxy gotify:80
+}
+
+#
+# Private services
+# The port 8080 is configured at the firewall level to only be open for ips from the internal network
+#
+
+ldap.sitegui.dev:8080 {
+    import internal_sockets
+    import logging
+
+    reverse_proxy lldap:17170
+}
+
+prometheus.sitegui.dev:8080 {
+    import internal_sockets
+    import logging
+    import auth
+
+    reverse_proxy prometheus:9090
 }

@@ -1,0 +1,17 @@
+[Unit]
+
+[Service]
+Restart = always
+RestartSec = 10
+
+[Container]
+ContainerName = prometheus
+Image = quay.io/prometheus/prometheus:latest
+Pull = never
+AutoUpdate = local
+Volume = %h/home-lab/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+Volume = %h/bare/prometheus/data:/prometheus
+Network = caddy-prometheus.network
+
+[Install]
+WantedBy = default.target
