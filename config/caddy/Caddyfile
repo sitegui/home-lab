@@ -92,6 +92,7 @@ notifications.sitegui.dev {
 ldap.sitegui.dev:8080 {
     import internal_sockets
     import logging
+    import auth
 
     reverse_proxy lldap:17170
 }

@@ -13,6 +13,7 @@ UserNS = keep-id
 Volume = %h/home-lab/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 Volume = %h/bare/prometheus/data:/prometheus
 Network = caddy-prometheus.network
+Network = prometheus-node-exporter.network
 
 [Install]
 WantedBy = default.target
