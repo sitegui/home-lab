@@ -61,6 +61,7 @@ pub fn create_cookie(
     let max_age = ::time::Duration::try_from(expiration.to_std().unwrap()).unwrap();
     Cookie::build((name, value))
         .domain(domain)
+        .path("/")
         .max_age(max_age)
         .secure(true)
         .http_only(true)
