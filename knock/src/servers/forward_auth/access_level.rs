@@ -1,5 +1,7 @@
 use crate::config::Config;
-use crate::data::{AppToken, Data, GuestLink, GuestSession, IpSession, LoginSession};
+use crate::data::{
+    AppToken, Data, GuestLink, GuestLinkResult, GuestSession, IpSession, LoginSession,
+};
 use crate::servers::forward_auth::request_info::RequestInfo;
 use serde::Serialize;
 
@@ -7,8 +9,11 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub enum AccessLevel<'a> {
     LoginSession(&'a LoginSession, Option<&'a GuestLink>),
+    ExpiredLoginSession,
     GuestSession(&'a GuestSession, Option<&'a GuestLink>),
+    ExpiredGuestSession,
     GuestLink(&'a GuestLink),
+    ExpiredGuestLink,
     AppToken(&'a AppToken),
     Ip(&'a IpSession),
     AllowedNetwork,
@@ -23,7 +28,9 @@ impl<'a> AccessLevel<'a> {
             if let Some(login_session) =
                 data.valid_login_session(request.arrival, login_session_hash)
             {
-                return AccessLevel::LoginSession(login_session, guest_link);
+                return AccessLevel::LoginSession(login_session, guest_link.ok());
+            } else {
+                return AccessLevel::ExpiredLoginSession;
             }
         }
 
@@ -31,12 +38,20 @@ impl<'a> AccessLevel<'a> {
             if let Some(guest_session) =
                 data.valid_guest_session(request.arrival, &request.host, guest_session_hash)
             {
-                return AccessLevel::GuestSession(guest_session, guest_link);
+                return AccessLevel::GuestSession(guest_session, guest_link.ok());
+            } else {
+                return AccessLevel::ExpiredGuestSession;
             }
         }
 
-        if let Some(guest_link) = guest_link {
-            return AccessLevel::GuestLink(guest_link);
+        match guest_link {
+            GuestLinkResult::Expired => {
+                return AccessLevel::ExpiredGuestLink;
+            }
+            GuestLinkResult::Ok(guest_link) => {
+                return AccessLevel::GuestLink(guest_link);
+            }
+            _ => {}
         }
 
         if let Some(app_token_hash) = request.app_token_hash {

@@ -79,6 +79,13 @@ pub struct AppToken {
     pub expires_at: DateTime<Utc>,
 }
 
+#[derive(Debug)]
+pub enum GuestLinkResult<'a> {
+    None,
+    Expired,
+    Ok(&'a GuestLink),
+}
+
 macro_rules! impl_map_item {
     ($struct_name:ty => $field:ident: $field_type:ty) => {
         impl MapItem for $struct_name {
@@ -109,14 +116,16 @@ impl Data {
         (session.expires_at > now).then_some(session)
     }
 
-    pub fn valid_guest_link(&self, now: DateTime<Utc>, url: &str) -> Option<&GuestLink> {
+    pub fn valid_guest_link(&self, now: DateTime<Utc>, url: &str) -> GuestLinkResult {
         if !url.ends_with('k') {
-            return None;
+            return GuestLinkResult::None;
         }
 
-        let guest_link = self.guest_links.get(&StringHash::new(url))?;
-
-        (guest_link.expires_at > now).then_some(guest_link)
+        match self.guest_links.get(&StringHash::new(url)) {
+            None => GuestLinkResult::None,
+            Some(guest_link) if guest_link.expires_at > now => GuestLinkResult::Ok(guest_link),
+            _ => GuestLinkResult::Expired,
+        }
     }
 
     pub fn valid_guest_session(
@@ -286,5 +295,14 @@ impl Data {
 impl GuestLink {
     pub fn original_url<'a>(&self, url: &'a str) -> &'a str {
         &url[..url.len() - self.suffix_length]
+    }
+}
+
+impl<'a> GuestLinkResult<'a> {
+    pub fn ok(self) -> Option<&'a GuestLink> {
+        match self {
+            GuestLinkResult::Ok(link) => Some(link),
+            _ => None,
+        }
     }
 }
