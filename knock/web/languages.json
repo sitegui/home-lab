@@ -13,7 +13,11 @@
     "Login": "Login",
     "Username:": "Username:",
     "You need to authenticate": "You need to authenticate",
-    "en": "en"
+    "en": "en",
+    "Your login session has expired": "Your login session has expired",
+    "Your guest session has expired. Please click the shared link again": "Your guest session has expired. Please click the shared link again",
+    "This link has expired": "This link has expired",
+    "Invalid credentials, try again": "Invalid credentials, try again"
   },
   "fr": {
     "6 digits": "6 chiffres",
@@ -29,6 +33,10 @@
     "Login": "Connexion",
     "Username:": "Nom d'utilisateur :",
     "You need to authenticate": "Vous devez vous authentifier",
-    "en": "fr"
+    "en": "fr",
+    "Your login session has expired": "Votre session a expirée",
+    "Your guest session has expired. Please click the shared link again": "Votre session d'invité a expirée. Reéssayer de cliquer sur le lien partagé",
+    "This link has expired": "Ce lien a expirée",
+    "Invalid credentials, try again": "Informations incorrectes, merci de reéssayer"
   }
 }
