@@ -39,8 +39,6 @@ impl<'a> AccessLevel<'a> {
                 data.valid_guest_session(request.arrival, &request.host, guest_session_hash)
             {
                 return AccessLevel::GuestSession(guest_session, guest_link.ok());
-            } else {
-                return AccessLevel::ExpiredGuestSession;
             }
         }
 
@@ -51,7 +49,11 @@ impl<'a> AccessLevel<'a> {
             GuestLinkResult::Ok(guest_link) => {
                 return AccessLevel::GuestLink(guest_link);
             }
-            _ => {}
+            GuestLinkResult::None => {
+                if request.guest_session_hash.is_some() {
+                    return AccessLevel::ExpiredGuestSession;
+                }
+            }
         }
 
         if let Some(app_token_hash) = request.app_token_hash {
