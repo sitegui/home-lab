@@ -6,7 +6,10 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-pub fn load_and_spawn_persist_loop(path: PathBuf, flush_interval: TimeDelta) -> Arc<Mutex<Data>> {
+pub fn load_and_spawn_persist_loop(
+    path: PathBuf,
+    flush_interval: TimeDelta,
+) -> anyhow::Result<Arc<Mutex<Data>>> {
     let data = match fs::read_to_string(&path) {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             tracing::info!("No previous data found");
@@ -16,17 +19,14 @@ pub fn load_and_spawn_persist_loop(path: PathBuf, flush_interval: TimeDelta) -> 
             tracing::error!("Failed to read previous data: {:?}", error);
             Data::default()
         }
-        Ok(contents) => serde_json::from_str(&contents).unwrap_or_else(|error| {
-            tracing::error!("Failed to parse previous data: {:?}", error);
-            Data::default()
-        }),
+        Ok(contents) => serde_json::from_str(&contents).context("failed to parse previous data")?,
     };
 
     let data = Arc::new(Mutex::new(data));
 
     tokio::spawn(persist_loop(data.clone(), path, flush_interval));
 
-    data
+    Ok(data)
 }
 
 async fn persist_loop(data: Arc<Mutex<Data>>, path: PathBuf, flush_interval: TimeDelta) {

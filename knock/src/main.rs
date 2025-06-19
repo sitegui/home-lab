@@ -50,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
         TcpListener::bind((config.portal_bind.as_str(), config.portal_port)).await?;
 
     let data =
-        load_and_spawn_persist_loop(config.data_file.clone(), config.data_persistence_interval);
+        load_and_spawn_persist_loop(config.data_file.clone(), config.data_persistence_interval)?;
     let forward_auth_logger = match &config.forward_auth_log_file {
         None => None,
         Some(path) => Some(Logger::new(path).await?),
