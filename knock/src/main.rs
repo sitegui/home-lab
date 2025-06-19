@@ -8,6 +8,7 @@ mod i18n;
 mod network;
 mod parse_duration;
 mod persistence;
+mod serialize_to_string;
 mod servers;
 mod string_hash;
 mod terminate;

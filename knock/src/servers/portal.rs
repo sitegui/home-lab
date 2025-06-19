@@ -30,15 +30,13 @@ pub async fn handle_portal_page(
         Err(_) => {
             let host = unwrap_or_403!(read_header(&headers, "x-forwarded-host"));
             let proto = unwrap_or_403!(read_header(&headers, "x-forwarded-proto"));
-            return build_login_redirection(config, &format!("{}://{}{}", proto, host, url));
+            return build_login_redirection(config, &format!("{}://{}{}", proto, host, url), None);
         }
     };
 
-    let html = unwrap_or_500!(
-        config
-            .i18n
-            .translate(&config.i18n_language, include_str!("../../web/portal.html"))
-    );
+    let translator = unwrap_or_500!(config.i18n.translator(&config.i18n_language));
+    let html =
+        unwrap_or_500!(translator.translate_placeholders(include_str!("../../web/portal.html")));
 
     #[derive(Serialize)]
     struct LoginSessionData {

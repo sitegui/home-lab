@@ -1,4 +1,6 @@
 use crate::config::Config;
+use crate::serialize_to_string::serialize_to_string;
+use crate::servers::login::LoginMessage;
 use anyhow::{Context, anyhow, ensure};
 use axum::extract::Path;
 use axum::http::{HeaderMap, StatusCode, Uri};
@@ -28,13 +30,30 @@ pub fn read_client_ip(headers: &HeaderMap) -> anyhow::Result<IpAddr> {
     Ok(client_ip)
 }
 
-pub fn build_login_redirection(config: &Config, callback: &str) -> Response {
-    Redirect::temporary(&format!(
-        "{}/?callback={}",
-        config.login_hostname,
-        urlencoding::encode(callback)
-    ))
-    .into_response()
+pub fn build_login_redirection(
+    config: &Config,
+    callback: &str,
+    message: Option<LoginMessage>,
+) -> Response {
+    let encoded_callback = urlencoding::encode(callback);
+
+    let url = match message {
+        None => format!("{}/?callback={}", config.login_hostname, encoded_callback),
+        Some(message) => {
+            let message = serialize_to_string(message)
+                .inspect_err(|error| {
+                    tracing::warn!("failed to serialize login message: {}", error);
+                })
+                .unwrap_or_default();
+
+            format!(
+                "{}/?callback={}&message={}",
+                config.login_hostname, encoded_callback, message,
+            )
+        }
+    };
+
+    Redirect::temporary(&url).into_response()
 }
 
 pub fn escape_html(value: &str) -> String {

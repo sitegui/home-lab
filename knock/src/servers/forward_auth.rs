@@ -7,6 +7,7 @@ use crate::common::{build_login_redirection, create_cookie};
 use crate::data::GuestLink;
 use crate::servers::forward_auth::access_level::AccessLevel;
 use crate::servers::forward_auth::request_info::RequestInfo;
+use crate::servers::login::LoginMessage;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
@@ -29,7 +30,12 @@ pub async fn handle_forward_auth(
     }
 
     match access_level {
-        AccessLevel::None => build_login_redirection(config, &request.url()),
+        AccessLevel::None => build_login_redirection(config, &request.url(), None),
+        AccessLevel::ExpiredLoginSession => build_login_redirection(
+            config,
+            &request.url(),
+            Some(LoginMessage::ExpiredLoginSession),
+        ),
         AccessLevel::LoginSession(session, guest_link) => {
             let session_hash = session.value_hash;
             let response = ok_or_redirect(&request, guest_link);
@@ -52,6 +58,11 @@ pub async fn handle_forward_auth(
 
             response
         }
+        AccessLevel::ExpiredGuestSession => build_login_redirection(
+            config,
+            &request.url(),
+            Some(LoginMessage::ExpiredGuestSession),
+        ),
         AccessLevel::GuestSession(guest_session, guest_link) => {
             let response = ok_or_redirect(&request, guest_link);
 
@@ -63,6 +74,9 @@ pub async fn handle_forward_auth(
             }
 
             response
+        }
+        AccessLevel::ExpiredGuestLink => {
+            build_login_redirection(config, &request.url(), Some(LoginMessage::ExpiredGuestLink))
         }
         AccessLevel::GuestLink(guest_link) => {
             let url = request.url();

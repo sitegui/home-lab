@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>[[You need to authenticate]]</title>
+    <title>{{message}}</title>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 <form action="/" method="post" class="login-form" onsubmit="this.querySelector('button').disabled = true">
-    <div class="form-title">[[You need to authenticate]]</div>
+    <div class="form-title">{{message}}</div>
 
     <input type="hidden" name="callback" value="{{callback}}"/>
     <div class="field">

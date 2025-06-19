@@ -9,13 +9,22 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::CookieJar;
 use chrono::Utc;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use totp_rs::TOTP;
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+pub enum LoginMessage {
+    ExpiredLoginSession,
+    ExpiredGuestSession,
+    ExpiredGuestLink,
+    InvalidCredentials,
+}
 
 #[derive(Deserialize)]
 pub struct LoginPageQuery {
     callback: String,
+    message: Option<LoginMessage>,
 }
 
 #[derive(Deserialize)]
@@ -29,7 +38,7 @@ pub async fn handle_login_page(
     State(state): State<Arc<AppState>>,
     Query(query): Query<LoginPageQuery>,
 ) -> Response {
-    render_login_page(&state.config, &query.callback)
+    render_login_page(&state.config, &query.callback, query.message)
 }
 
 pub async fn handle_login_action(
@@ -96,7 +105,7 @@ pub async fn handle_login_action(
 
     if !unwrap_or_500!(check_token(totps, &token)) {
         tracing::info!("FAILED: invalid token");
-        return render_login_page(config, &callback);
+        return render_login_page(config, &callback, Some(LoginMessage::InvalidCredentials));
     }
 
     ip_attempt.report_success();
@@ -126,14 +135,26 @@ pub async fn handle_login_action(
     (cookies, Redirect::temporary(&callback)).into_response()
 }
 
-fn render_login_page(config: &Config, callback: &str) -> Response {
-    let login_html = unwrap_or_500!(
-        config
-            .i18n
-            .translate(&config.i18n_language, include_str!("../../web/login.html"))
-    );
+fn render_login_page(config: &Config, callback: &str, message: Option<LoginMessage>) -> Response {
+    let translator = unwrap_or_500!(config.i18n.translator(&config.i18n_language));
 
-    let login_html = login_html.replace("{{callback}}", &escape_html(callback));
+    let message_key = match message {
+        None => "You need to authenticate",
+        Some(LoginMessage::ExpiredLoginSession) => "Your login session has expired",
+        Some(LoginMessage::ExpiredGuestSession) => {
+            "Your guest session has expired. Please click the shared link again"
+        }
+        Some(LoginMessage::ExpiredGuestLink) => "This link has expired",
+        Some(LoginMessage::InvalidCredentials) => "Invalid credentials, try again",
+    };
+    let message = translator.translate(message_key);
+
+    let login_html =
+        unwrap_or_500!(translator.translate_placeholders(include_str!("../../web/login.html")));
+
+    let login_html = login_html
+        .replace("{{callback}}", &escape_html(callback))
+        .replace("{{message}}", &escape_html(message));
 
     ([("content-type", "text/html")], login_html).into_response()
 }
