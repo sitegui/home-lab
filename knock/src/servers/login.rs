@@ -117,7 +117,7 @@ pub async fn handle_login_action(
         client_ip,
         config.login_session_expiration
     ));
-    data.update_ip_session(
+    data.upsert_ip_session(
         client_ip,
         Some(value_hash),
         None,

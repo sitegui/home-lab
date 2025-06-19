@@ -221,6 +221,7 @@ impl Data {
         Ok(value)
     }
 
+    /// Update an existing guest session
     pub fn update_guest_session(
         &mut self,
         value_hash: StringHash,
@@ -235,7 +236,10 @@ impl Data {
         session.guest_link_hashes.insert(guest_link_hash);
     }
 
-    pub fn update_ip_session(
+    /// Update an existing ip session or create it now.
+    ///
+    /// The ip session expiration will always be reset
+    pub fn upsert_ip_session(
         &mut self,
         ip_addr: IpAddr,
         login_session: Option<StringHash>,
@@ -265,7 +269,19 @@ impl Data {
         ip_session.expires_at = now + expiration;
     }
 
-    pub fn update_app_token(
+    /// Update an existing app token
+    pub fn update_app_token(&mut self, value_hash: StringHash, ip: IpAddr) {
+        let Some(app_token) = self.app_tokens.get_mut(&value_hash) else {
+            return;
+        };
+
+        app_token.ips.insert(ip);
+    }
+
+    /// Update an existing app token or create it now.
+    ///
+    /// The app token expiration will be reset
+    pub fn upsert_app_token(
         &mut self,
         value_hash: StringHash,
         host: &str,
@@ -273,22 +289,23 @@ impl Data {
         ip: IpAddr,
         expiration: TimeDelta,
     ) {
-        let app_token = self.app_tokens.get_or_insert_with(&value_hash, || {
-            let created_at = Utc::now();
-            AppToken {
+        let now = Utc::now();
+        let app_token = self
+            .app_tokens
+            .get_or_insert_with(&value_hash, || AppToken {
                 value_hash,
                 host: host.to_owned(),
                 login_sessions: Default::default(),
                 ips: Default::default(),
-                created_at,
-                expires_at: created_at + expiration,
-            }
-        });
+                created_at: now,
+                expires_at: now + expiration,
+            });
 
         if let Some(login_session) = login_session {
             app_token.login_sessions.insert(login_session);
         }
         app_token.ips.insert(ip);
+        app_token.expires_at = now + expiration;
     }
 }
 

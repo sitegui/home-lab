@@ -40,14 +40,14 @@ pub async fn handle_forward_auth(
             let session_hash = session.value_hash;
             let response = ok_or_redirect(&request, guest_link);
 
-            data.update_ip_session(
+            data.upsert_ip_session(
                 request.client_ip,
                 Some(session_hash),
                 request.app_token_hash,
                 config.login_session_expiration,
             );
             if let Some(app_token_hash) = request.app_token_hash {
-                data.update_app_token(
+                data.upsert_app_token(
                     app_token_hash,
                     &request.host,
                     Some(session_hash),
@@ -102,15 +102,9 @@ pub async fn handle_forward_auth(
         AccessLevel::AppToken(app_token) => {
             let app_token_hash = app_token.value_hash;
 
-            data.update_app_token(
-                app_token_hash,
-                &request.host,
-                None,
-                request.client_ip,
-                config.app_token_expiration,
-            );
+            data.update_app_token(app_token_hash, request.client_ip);
 
-            data.update_ip_session(
+            data.upsert_ip_session(
                 request.client_ip,
                 None,
                 Some(app_token_hash),
@@ -119,18 +113,26 @@ pub async fn handle_forward_auth(
 
             StatusCode::OK.into_response()
         }
-        AccessLevel::Ip(_) => {
+        AccessLevel::Ip(ip_session) => {
             if let Some(app_token_hash) = request.app_token_hash {
-                data.update_app_token(
-                    app_token_hash,
-                    &request.host,
-                    None,
-                    request.client_ip,
-                    config.app_token_expiration,
-                );
+                let has_valid_login_session =
+                    ip_session.login_sessions.iter().any(|&login_session| {
+                        data.valid_login_session(request.arrival, login_session)
+                            .is_some()
+                    });
+
+                if has_valid_login_session {
+                    data.upsert_app_token(
+                        app_token_hash,
+                        &request.host,
+                        None,
+                        request.client_ip,
+                        config.app_token_expiration,
+                    );
+                }
             }
 
-            data.update_ip_session(
+            data.upsert_ip_session(
                 request.client_ip,
                 None,
                 request.app_token_hash,
