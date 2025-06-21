@@ -14,6 +14,7 @@ Volume = %h/home-lab/config/monitoring/prometheus.yml:/etc/prometheus/prometheus
 Volume = %h/bare/prometheus/data:/prometheus
 Network = caddy-prometheus.network
 Network = prometheus-node-exporter.network
+Network = grafana-prometheus.network
 
 [Install]
 WantedBy = default.target
