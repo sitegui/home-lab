@@ -1,7 +1,7 @@
 [Unit]
 Description = Backup
 # Restart at most 5 times
-StartLimitIntervalSec = 1d
+StartLimitIntervalSec = 12h
 StartLimitBurst = 5
 
 [Service]
@@ -9,6 +9,3 @@ WorkingDirectory = %h/home-lab
 ExecStart = %h/home-lab/target/release/home-lab backup
 Restart = on-failure
 RestartSec = 60
-
-[Install]
-WantedBy = default.target

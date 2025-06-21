@@ -5,6 +5,3 @@ Description = Update packages
 WorkingDirectory = %h/home-lab
 ExecStart = %h/home-lab/target/release/home-lab update packages
 Restart = no
-
-[Install]
-WantedBy = default.target

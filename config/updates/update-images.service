@@ -5,6 +5,3 @@ Description = Update images
 WorkingDirectory = %h/home-lab
 ExecStart = %h/home-lab/target/release/home-lab update images
 Restart = no
-
-[Install]
-WantedBy = default.target
