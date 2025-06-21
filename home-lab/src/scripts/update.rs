@@ -60,17 +60,17 @@ fn update_images() -> anyhow::Result<()> {
 
     tracing::info!("Detected images:");
     let mut image_names = BTreeSet::new();
-    for ((image, image_id), containers) in images {
+    for ((image, image_id), containers) in &images {
         tracing::info!(
-            "- {}@{}: used by {}",
+            "- {} @ {}: used by {}",
             image,
-            image_id,
+            &image_id[..8],
             containers.iter().format(", ")
         );
         image_names.insert(image);
     }
 
-    for image in image_names {
+    for (image, image_id) in images.keys() {
         if image.starts_with("localhost/") {
             continue;
         }
@@ -83,7 +83,11 @@ fn update_images() -> anyhow::Result<()> {
             .trim()
             .to_string();
 
-        tracing::info!("Pulled image {}@{}", image, new_image_id);
+        if new_image_id == *image_id {
+            tracing::info!("Pulled image {}: nothing to update", image);
+        } else {
+            tracing::info!("Pulled image {}: new ({})", image, &new_image_id[..8]);
+        }
     }
 
     Child::new("podman").arg("auto-update").run()?;
