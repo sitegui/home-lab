@@ -10,7 +10,7 @@ Image = localhost/knock
 AutoUpdate = local
 UserNS = keep-id
 Volume = %h/bare/knock/secrets:/secrets
-Environment = ALLOWED_NETWORKS=192.168.1.51
+Environment = ALLOWED_NETWORKS=192.168.1.51,2a01:e0a:82c:b1f0:d294:66ff:fea3:3624
 Environment = COOKIE_DOMAIN=sitegui.dev
 Environment = DATA_FILE=/secrets/data.json
 Environment = FORWARD_AUTH_BIND=0.0.0.0
