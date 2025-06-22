@@ -9,7 +9,7 @@ ContainerName = grafana
 Image = docker.io/grafana/grafana-oss:latest
 Pull = never
 AutoUpdate = local
-UserNS = keep-id
+UserNS = keep-id:uid=472
 Volume = %h/bare/grafana/data:/var/lib/grafana
 Network = caddy-grafana.network
 Network = grafana-prometheus.network
