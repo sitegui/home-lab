@@ -7,6 +7,6 @@ receivers:
       - send_resolved: true
         to: '$AM_EMAIL'
         from: '$AM_EMAIL'
-        smtp_smarthost: '$AM_ADDRESS'
-        smtp_auth_username: '$AM_USERNAME'
-        smtp_auth_password: '$AM_PASSWORD'
+        smarthost: 'smtp.fastmail.com:587'
+        auth_username: '$AM_USERNAME'
+        auth_password: '$AM_PASSWORD'
