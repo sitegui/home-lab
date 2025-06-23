@@ -13,6 +13,7 @@ Notify = true
 Volume = %h/home-lab/config/caddy/Caddyfile:/etc/caddy/Caddyfile
 Volume = %h/bare/caddy/data:/data
 Volume = %h/bare/caddy/config:/config
+Network = caddy-alertmanager.network
 Network = caddy-gotify.network
 Network = caddy-grafana.network
 Network = caddy-jellyfin.network

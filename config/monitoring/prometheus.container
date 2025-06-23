@@ -12,9 +12,10 @@ AutoUpdate = local
 UserNS = keep-id
 Volume = %h/home-lab/config/monitoring/prometheus:/etc/prometheus
 Volume = %h/bare/prometheus/data:/prometheus
+Network = alertmanager-prometheus.network
 Network = caddy-prometheus.network
-Network = prometheus-node-exporter.network
 Network = grafana-prometheus.network
+Network = prometheus-node-exporter.network
 
 [Install]
 WantedBy = default.target

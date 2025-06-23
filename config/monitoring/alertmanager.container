@@ -1,0 +1,22 @@
+[Unit]
+
+[Service]
+Restart = always
+RestartSec = 10
+
+[Container]
+ContainerName = alertmanager
+Image = quay.io/prometheus/alertmanager:latest
+Pull = never
+AutoUpdate = local
+Volume = %h/home-lab/config/monitoring/alertmanager.template.yml:/etc/alertmanager/alertmanager.template.yml
+Volume = %h/bare/alertmanager/data:/alertmanager
+Network = caddy-alertmanager.network
+Network = alertmanager-prometheus.network
+# Use this hack in order to substitute env vars into the config file, protecting secrets
+Entrypoint = ["/bin/sh", "-c"]
+Exec = "envsubst < /etc/alertmanager/alertmanager.template.yml > /etc/alertmanager/alertmanager.yml && alertmanager --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/alertmanager"
+EnvironmentFile = %h/bare/alertmanager.env
+
+[Install]
+WantedBy = default.target

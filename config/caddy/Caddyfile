@@ -112,3 +112,11 @@ prometheus.sitegui.dev:8080 {
 
     reverse_proxy prometheus:9090
 }
+
+alertmanager.sitegui.dev:8080 {
+    import internal_sockets
+    import logging
+    import auth
+
+    reverse_proxy alertmanager:9093
+}
