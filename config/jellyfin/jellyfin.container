@@ -13,7 +13,7 @@ AutoUpdate = local
 UserNS = keep-id
 Volume = %h/protected/jellyfin/config:/config
 Volume = %h/protected/jellyfin/cache:/cache
-Volume = %h/protected/nextcloud/volumes/nextcloud_aio_nextcloud_data/sitegui/files/Jellyfin:/media
+Volume = %h/protected/nextcloud/volumes/nextcloud_aio_nextcloud_data/sitegui/files/Jellyfin:/media:ro
 Environment = JELLYFIN_PublishedServerUrl=https://films.sitegui.dev
 Network = caddy-jellyfin.network
 

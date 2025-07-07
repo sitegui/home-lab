@@ -9,10 +9,10 @@ ContainerName = lindy
 Image = docker.io/library/caddy:2
 Pull = never
 AutoUpdate = local
-Volume = %h/home-lab/config/lindy/Caddyfile:/etc/caddy/Caddyfile
+Volume = %h/home-lab/config/lindy/Caddyfile:/etc/caddy/Caddyfile:ro
 Volume = %h/protected/lindy/data:/data
 Volume = %h/protected/lindy/config:/config
-Volume = %h/protected/lindy/build:/app/lindy
+Volume = %h/protected/lindy/build:/app/lindy:ro
 Network = caddy-lindy.network
 
 [Install]

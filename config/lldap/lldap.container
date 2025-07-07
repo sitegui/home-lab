@@ -11,7 +11,7 @@ Pull = never
 AutoUpdate = local
 UserNS = keep-id
 Volume = %h/bare/lldap/data:/data
-Volume = %h/bare/lldap/secrets:/lldap_secrets
+Volume = %h/bare/lldap/secrets:/lldap_secrets:ro
 Environment = LLDAP_JWT_SECRET_FILE=/lldap_secrets/jwt_secret
 Environment = LLDAP_KEY_SEED_FILE=/lldap_secrets/key_seed
 Environment = LLDAP_LDAP_BASE_DN=dc=sitegui,dc=dev
