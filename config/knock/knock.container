@@ -14,7 +14,6 @@ Environment = ALLOWED_NETWORKS=192.168.1.51,2a01:e0a:82c:b1f0:d294:66ff:fea3:362
 Environment = COOKIE_DOMAIN=sitegui.dev
 Environment = DATA_FILE=/secrets/data.json
 Environment = FORWARD_AUTH_BIND=0.0.0.0
-Environment = FORWARD_AUTH_LOG_FILE=/secrets/forward_auth.jsonl
 Environment = I18N_LANGUAGE=fr
 Environment = LOGIN_BIND=0.0.0.0
 Environment = LOGIN_HOSTNAME=https://login.sitegui.dev
