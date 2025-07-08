@@ -61,7 +61,7 @@ fn parse_service(container: &str) -> anyhow::Result<Option<Service>> {
         kind: String,
         #[serde(rename = "Source")]
         source: PathBuf,
-        #[serde(rename = "rw")]
+        #[serde(rename = "RW")]
         rw: bool,
     }
 
