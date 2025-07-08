@@ -76,7 +76,7 @@ fn update_images() -> anyhow::Result<()> {
         }
 
         let new_image_id = Child::new("podman")
-            .args(["pull", "--quiet", &image])
+            .args(["pull", "--quiet", image])
             .capture_stdout()
             .run()?
             .stdout()?

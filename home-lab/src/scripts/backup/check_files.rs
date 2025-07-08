@@ -6,41 +6,76 @@ use rand::rng;
 use sha1::digest::Output;
 use sha1::{Digest, Sha1};
 use std::fs::File;
-use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::{fs, io};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct CheckStats {
-    pub good: usize,
-    pub bad: usize,
+    pub good: i32,
+    pub bad: i32,
 }
 
 pub fn check_files(
     home: &Path,
     check_percentage: f64,
+    check_stats: &mut CheckStats,
     disk: BackupDisk,
-) -> anyhow::Result<CheckStats> {
+    volumes: &[PathBuf],
+    excludes: &[PathBuf],
+) -> anyhow::Result<()> {
     let backup_dir = disk.backup_dir(home);
-    let files = disk.list_files(home)?;
+    let files = list_files(volumes, excludes)?;
 
-    let sample_size = (files.len() as f64 * check_percentage / 100.0).round() as usize;
+    let sample_size = (files.len() as f64 * check_percentage / 100.0).ceil() as usize;
     let selected_files = files.choose_multiple(&mut rng(), sample_size).collect_vec();
     tracing::info!("Will check the contents of {} files", selected_files.len());
 
-    let mut good = 0;
-    let mut bad = 0;
     for original in selected_files {
         let backup = backup_dir.join(original.strip_prefix(home)?);
 
         if let Err(error) = check_file(original, &backup) {
             tracing::error!("File check failed for '{}': {}", original.display(), error);
-            bad += 1;
+            check_stats.bad += 1;
         } else {
-            good += 1;
+            check_stats.good += 1;
         }
     }
 
-    Ok(CheckStats { good, bad })
+    Ok(())
+}
+
+fn list_files(volumes: &[PathBuf], excludes: &[PathBuf]) -> anyhow::Result<Vec<PathBuf>> {
+    let mut files = vec![];
+    for volume in volumes {
+        let metadata = volume.metadata()?;
+        if metadata.is_dir() {
+            collect_files(excludes, volume, &mut files)?;
+        } else if metadata.is_file() {
+            files.push(volume.clone());
+        }
+    }
+
+    Ok(files)
+}
+
+fn collect_files(
+    excludes: &[PathBuf],
+    path: &Path,
+    files: &mut Vec<PathBuf>,
+) -> anyhow::Result<()> {
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        let path = entry.path();
+
+        if file_type.is_dir() && !excludes.contains(&path) {
+            collect_files(excludes, &path, files)?;
+        } else if file_type.is_file() {
+            files.push(path);
+        }
+    }
+
+    Ok(())
 }
 
 fn check_file(original_path: &Path, backup_path: &Path) -> anyhow::Result<()> {

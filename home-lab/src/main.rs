@@ -24,8 +24,6 @@ enum Cli {
     Backup {
         #[clap(long, default_value_t = 1.0)]
         check_percentage: f64,
-        #[clap(long)]
-        check_only: bool,
     },
     /// Copy all sudo scripts to ~/sudo-scripts and edit the sudoers file to enable running them
     InstallSudoScripts,
@@ -59,10 +57,7 @@ fn main() -> anyhow::Result<()> {
 
     match Cli::parse() {
         Cli::Unlock => unlock()?,
-        Cli::Backup {
-            check_percentage,
-            check_only,
-        } => backup(check_percentage, check_only)?,
+        Cli::Backup { check_percentage } => backup(check_percentage)?,
         Cli::InstallSudoScripts => install_sudo_scripts()?,
         Cli::InstallUnits { force, path } => install_units(force, path)?,
         Cli::CompileNextcloudUnits {

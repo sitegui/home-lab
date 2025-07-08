@@ -1,8 +1,6 @@
 use crate::child::Child;
 use crate::mount::mount_source;
 use anyhow::{Context, bail};
-use itertools::Itertools;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Copy, Clone)]
@@ -28,6 +26,15 @@ impl BackupDisk {
 
     pub fn source_dirs(self, home: &Path) -> Vec<PathBuf> {
         vec![home.join("bare"), home.join("protected")]
+    }
+
+    pub fn exclude_dirs(self, home: &Path) -> Vec<PathBuf> {
+        match self {
+            BackupDisk::Backup1 => vec![home.join(
+                "protected/nextcloud/volumes/nextcloud_aio_nextcloud_data/sitegui/files/Jellyfin",
+            )],
+            BackupDisk::Backup2 => vec![],
+        }
     }
 
     pub fn backup_dir(self, home: &Path) -> PathBuf {
@@ -65,59 +72,4 @@ impl BackupDisk {
 
         Ok(())
     }
-
-    pub fn excludes(self) -> Vec<String> {
-        match self {
-            BackupDisk::Backup1 => vec![
-                "/protected/nextcloud/volumes/nextcloud_aio_nextcloud_data/sitegui/files/Jellyfin/"
-                    .to_string(),
-            ],
-            BackupDisk::Backup2 => vec![],
-        }
-    }
-
-    pub fn list_files(self, home: &Path) -> anyhow::Result<Vec<PathBuf>> {
-        // Note: this logic only works for paths without wildcards and that are anchored at the
-        // beginning of the transfer.
-        let excludes: Vec<_> = self
-            .excludes()
-            .into_iter()
-            .map(|exclude| -> anyhow::Result<_> {
-                exclude
-                    .strip_prefix('/')
-                    .context("invalid exclude")?
-                    .strip_suffix('/')
-                    .context("invalid exclude")?;
-
-                Ok(home.join(exclude))
-            })
-            .try_collect()?;
-
-        let mut files = vec![];
-        for source in self.source_dirs(home) {
-            collect_files(&excludes, &source, &mut files)?;
-        }
-
-        Ok(files)
-    }
-}
-
-fn collect_files(
-    excludes: &[PathBuf],
-    path: &Path,
-    files: &mut Vec<PathBuf>,
-) -> anyhow::Result<()> {
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        let file_type = entry.file_type()?;
-        let path = entry.path();
-
-        if file_type.is_dir() && !excludes.contains(&path) {
-            collect_files(excludes, &path, files)?;
-        } else if file_type.is_file() {
-            files.push(path);
-        }
-    }
-
-    Ok(())
 }

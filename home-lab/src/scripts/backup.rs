@@ -3,7 +3,8 @@ use crate::error::error_messages;
 use crate::home::home;
 use crate::mount::mount_source;
 use crate::notifications::{Notifier, Priority};
-use crate::scripts::backup::check_files::{CheckStats, check_files};
+use crate::scripts::backup::check_files::CheckStats;
+use crate::scripts::backup::do_backup::{backup_other_files, backup_service};
 use anyhow::{Context, bail, ensure};
 use backup_disk::BackupDisk;
 use chrono::Utc;
@@ -13,13 +14,15 @@ use std::{fs, thread};
 
 mod backup_disk;
 mod check_files;
-mod start_services_on_drop;
+mod do_backup;
+mod list_services;
+mod start_service_on_drop;
 
-pub fn backup(check_percentage: f64, check_only: bool) -> anyhow::Result<()> {
+pub fn backup(check_percentage: f64) -> anyhow::Result<()> {
     let start = Instant::now();
     let home = home()?;
 
-    let result = backup_inner(&home, check_percentage, check_only);
+    let result = backup_inner(&home, check_percentage);
     let elapsed_minutes = start.elapsed().as_secs_f64() / 60.0;
 
     let (title, message, priority) = match &result {
@@ -52,58 +55,58 @@ pub fn backup(check_percentage: f64, check_only: bool) -> anyhow::Result<()> {
     result.map(|_| ())
 }
 
-fn backup_inner(
-    home: &Path,
-    check_percentage: f64,
-    check_only: bool,
-) -> anyhow::Result<CheckStats> {
+fn backup_inner(home: &Path, check_percentage: f64) -> anyhow::Result<CheckStats> {
+    let now = format!("{}\n", Utc::now());
     let protected_dir = home.join("protected");
+    tracing::info!("Starting backup at {}", now.trim());
+    fs::write(protected_dir.join("last-backup-attempt.txt"), &now)
+        .context("failed to write last-backup-attempt.txt")?;
 
     mount_source(&protected_dir).context("protected disk does not seem to be mounted")?;
     let backup_disk = BackupDisk::mount_one(home)?;
 
-    let mut stopped_services = None;
-    if !check_only {
-        let now = format!("{}\n", Utc::now());
-        tracing::info!("Starting backup at {}", now.trim());
-        fs::write(protected_dir.join("last-backup-attempt.txt"), &now)
-            .context("failed to write last-backup-attempt.txt")?;
+    let mut check_stats = CheckStats::default();
 
-        let backup_dir = backup_disk.backup_dir(home);
-        stopped_services = Some(start_services_on_drop::stop_containers(home)?);
-
-        let mut child = Child::new("rsync")
-            .args(backup_disk.source_dirs(home))
-            .arg(&backup_dir)
-            .arg("--archive")
-            .arg("--delete")
-            .arg("--verbose");
-
-        for exclude in backup_disk.excludes() {
-            child = child.arg("--exclude");
-            child = child.arg(exclude);
+    let services = list_services::list_services()?;
+    let mut one_error = Ok(());
+    for service in &services {
+        if let Err(error) = backup_service(
+            home,
+            backup_disk,
+            &mut check_stats,
+            check_percentage,
+            service,
+        ) {
+            tracing::error!("Failed to backup service {}: {:?}", service.name, error);
+            one_error = Err(error);
         }
-
-        child.run()?;
-
-        let last_successful_backup = protected_dir.join("last-successful-backup.txt");
-        fs::copy(
-            backup_dir.join("protected/last-backup-attempt.txt"),
-            &last_successful_backup,
-        )
-        .with_context(|| format!("failed to copy {}", last_successful_backup.display()))?;
-        let witness = fs::read_to_string(&last_successful_backup)
-            .with_context(|| format!("failed to read {}", last_successful_backup.display()))?;
-        ensure!(
-            witness == now,
-            "the backup witness file content is not the expected one"
-        );
-        tracing::info!("Witness file has expected content, backup is up to date");
     }
+    one_error?;
 
-    let check_stats = check_files(home, check_percentage, backup_disk)?;
+    backup_other_files(
+        home,
+        backup_disk,
+        &mut check_stats,
+        check_percentage,
+        &services,
+    )?;
+
     tracing::info!("Backup check stats: {:?}", check_stats);
-    drop(stopped_services);
+
+    let last_successful_backup = protected_dir.join("last-successful-backup.txt");
+    let backup_dir = backup_disk.backup_dir(home);
+    fs::copy(
+        backup_dir.join("protected/last-backup-attempt.txt"),
+        &last_successful_backup,
+    )
+    .with_context(|| format!("failed to copy {}", last_successful_backup.display()))?;
+    let witness = fs::read_to_string(&last_successful_backup)
+        .with_context(|| format!("failed to read {}", last_successful_backup.display()))?;
+    ensure!(
+        witness == now,
+        "the backup witness file content is not the expected one"
+    );
+    tracing::info!("Witness file has expected content, backup is up to date");
 
     tracing::info!("Will unmount backup");
     Child::new("sudo")
