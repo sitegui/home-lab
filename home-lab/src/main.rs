@@ -14,6 +14,7 @@ use crate::scripts::unlock::unlock;
 use crate::scripts::update::{UpdateKind, update};
 use clap::Parser;
 use std::path::PathBuf;
+use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
 enum Cli {
@@ -53,7 +54,10 @@ enum Cli {
 }
 
 fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::fmt().with_target(false).init();
+    tracing_subscriber::fmt::fmt()
+        .with_target(false)
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
     match Cli::parse() {
         Cli::Unlock => unlock()?,
