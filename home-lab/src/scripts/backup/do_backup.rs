@@ -53,8 +53,7 @@ pub fn backup_service(
             let mut bind_arg = bind.as_os_str().to_owned();
             bind_arg.push("/");
 
-            // TODO: add arg("--delete")
-            child = child.arg(bind_arg);
+            child = child.arg(bind_arg).arg(destination).arg("--delete");
 
             for exclude in &excludes {
                 if let Ok(exclude_strip_bind) = exclude.strip_prefix(bind) {
@@ -69,16 +68,12 @@ pub fn backup_service(
             if let Some(parent) = destination.parent() {
                 fs::create_dir_all(parent).context("failed to create destination directory")?;
             }
-            child = child.arg(bind);
+            child = child.arg(bind).arg(destination);
         } else {
             bail!("bind volume is neither a directory nor a file")
         }
 
-        child
-            .arg(destination)
-            .arg("--archive")
-            .arg("--verbose")
-            .run()?;
+        child.arg("--archive").arg("--verbose").run()?;
     }
 
     check_files(
@@ -116,12 +111,12 @@ pub fn backup_other_files(
     }
 
     // rsync $SOURCE_N $BACKUP --exclude /$SOURCE_LAST_NAME/$EXCLUDE_STRIP_SOURCE/
-    // TODO: add arg("--delete")
     let mut child = Child::new("rsync")
         .args(&sources)
         .arg(&backup_dir)
         .arg("--archive")
-        .arg("--verbose");
+        .arg("--verbose")
+        .arg("--delete");
 
     for source in &sources {
         for exclude in &excludes {
