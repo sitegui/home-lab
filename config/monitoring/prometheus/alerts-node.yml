@@ -152,6 +152,18 @@ groups:
           summary: Host unusual disk IO (instance {{ $labels.instance }})
           description: "Disk usage >80%. Check storage for issues or increase IOPS capabilities. Check storage for issues.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+      # x2 context switches is an arbitrary number.
+      # The alert threshold depends on the nature of the application.
+      # Please read: https://github.com/samber/awesome-prometheus-alerts/issues/58
+      - alert: HostContextSwitchingHigh
+        expr: (rate(node_context_switches_total[15m])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) / (rate(node_context_switches_total[1d])/count without(mode,cpu) (node_cpu_seconds_total{mode="idle"})) > 2
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host context switching high (instance {{ $labels.instance }})
+          description: "Context switching is growing on the node (twice the daily average during the last 15m)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
       - alert: HostSwapIsFillingUp
         expr: ((1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80)
         for: 2m

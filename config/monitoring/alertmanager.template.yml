@@ -1,5 +1,9 @@
 route:
-  receiver: 'email'
+  routes:
+    - matchers:
+        - 'severity = none'
+      receiver: 'do_nothing'
+    - receiver: 'email'
 
 receivers:
   - name: 'email'
@@ -10,3 +14,11 @@ receivers:
         smarthost: 'smtp.fastmail.com:587'
         auth_username: '$AM_USERNAME'
         auth_password: '$AM_PASSWORD'
+  - name: 'do_nothing'
+
+inhibit_rules:
+  - source_matchers:
+      - 'alertname = BackupPeriod'
+    target_matchers:
+      # TODO: the HostFilesystemDeviceError alert should not be silenced
+      - 'alertname =~ "HostFilesystemDeviceError|HostCpuHighIowait|HostUnusualDiskWriteLatency|HostContextSwitchingHigh"'

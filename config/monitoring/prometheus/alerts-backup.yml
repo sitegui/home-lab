@@ -1,0 +1,11 @@
+groups:
+  # Strategy from https://stackoverflow.com/questions/59157537/how-to-snooze-prometheus-alert-for-specific-time/59164932
+  - name: Node
+    rules:
+      - alert: BackupPeriod
+        expr: (hour() == 3) and (minute() < 15)
+        for: 0m
+        labels:
+          severity: none
+        annotations:
+          description: 'This alert fires during backup hours to inhibit others'
