@@ -1,9 +1,9 @@
 route:
+  receiver: 'email'
   routes:
     - matchers:
         - 'severity = none'
       receiver: 'do_nothing'
-    - receiver: 'email'
 
 receivers:
   - name: 'email'
