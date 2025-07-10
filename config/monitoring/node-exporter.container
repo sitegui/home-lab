@@ -13,6 +13,7 @@ Volume = /:/rootfs:ro,rslave
 Exec = --path.rootfs=/rootfs
 Network = prometheus-node-exporter.network
 PodmanArgs = --pid=host
+UserNS = keep-id
 
 [Install]
 WantedBy = default.target
