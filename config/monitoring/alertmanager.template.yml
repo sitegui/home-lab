@@ -20,5 +20,4 @@ inhibit_rules:
   - source_matchers:
       - 'alertname = BackupPeriod'
     target_matchers:
-      # TODO: the HostFilesystemDeviceError alert should not be silenced
-      - 'alertname =~ "HostFilesystemDeviceError|HostCpuHighIowait|HostUnusualDiskWriteLatency|HostContextSwitchingHigh"'
+      - 'alertname =~ "HostCpuHighIowait|HostUnusualDiskWriteLatency|HostContextSwitchingHigh"'
