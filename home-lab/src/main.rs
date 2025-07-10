@@ -10,6 +10,7 @@ use crate::scripts::backup::backup;
 use crate::scripts::compile_nextcloud_units::compile_nextcloud_units;
 use crate::scripts::install_sudo_scripts::install_sudo_scripts;
 use crate::scripts::install_units::install_units;
+use crate::scripts::run_unlock_api::run_unlock_api;
 use crate::scripts::unlock::unlock;
 use crate::scripts::update::{UpdateKind, update};
 use clap::Parser;
@@ -21,6 +22,12 @@ use tracing_subscriber::EnvFilter;
 enum Cli {
     /// Unlock the internal disk and start up the other services
     Unlock,
+    /// Start a simple HTTP server that can be used to unlock the internal disk
+    RunUnlockApi {
+        #[clap(long, default_value = "127.0.0.1")]
+        bind: String,
+        port: u16,
+    },
     /// Run the backup, copying local files into one of the backup disks, then check a given
     /// percentage of the files
     Backup {
@@ -66,6 +73,7 @@ fn main() -> anyhow::Result<()> {
 
     match Cli::parse() {
         Cli::Unlock => unlock()?,
+        Cli::RunUnlockApi { bind, port } => run_unlock_api(bind, port)?,
         Cli::Backup { check_percentage } => backup(check_percentage)?,
         Cli::InstallSudoScripts => install_sudo_scripts()?,
         Cli::InstallUnits { force, path } => install_units(force, path)?,
