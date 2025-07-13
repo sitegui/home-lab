@@ -13,6 +13,7 @@ mod string_hash;
 mod template_renderer;
 mod terminate;
 mod throttle;
+mod unlock_api;
 
 use crate::common::handle_static_file;
 use crate::config::Config;
@@ -24,6 +25,7 @@ use crate::servers::login::{handle_login_action, handle_login_page};
 use crate::servers::portal::{handle_portal_page, post_guest_link};
 use crate::terminate::TERMINATE;
 use crate::throttle::Throttle;
+use crate::unlock_api::UnlockApi;
 use axum::Router;
 use axum::routing::{get, post};
 use parking_lot::Mutex;
@@ -35,6 +37,7 @@ struct AppState {
     config: Config,
     throttle: Throttle,
     forward_auth_logger: Mutex<Option<Logger>>,
+    unlock_api: UnlockApi,
 }
 
 #[tokio::main]
@@ -56,11 +59,18 @@ async fn main() -> anyhow::Result<()> {
         Some(path) => Some(Logger::new(path).await?),
     };
 
+    let unlock_api = UnlockApi::new(
+        config.unlock_api_host.clone(),
+        config.unlock_api_status_timeout,
+        config.unlock_api_unlock_timeout,
+        config.unlock_api_unlock_throttle,
+    )?;
     let state = Arc::new(AppState {
         data,
         config,
         throttle: Throttle::default(),
         forward_auth_logger: Mutex::new(forward_auth_logger),
+        unlock_api,
     });
 
     let forward_auth_router = Router::new()

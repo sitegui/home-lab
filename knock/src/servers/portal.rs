@@ -13,7 +13,6 @@ use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
 use minijinja::context;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::net::IpAddr;
 use std::sync::Arc;
 
@@ -24,6 +23,15 @@ pub async fn handle_portal_page(
     State(state): State<Arc<AppState>>,
 ) -> Response {
     let config = &state.config;
+
+    let is_unlocked = state
+        .unlock_api
+        .is_unlocked()
+        .await
+        .unwrap_or_else(|error| {
+            tracing::warn!("Could not check unlock status: {}", error);
+            true
+        });
 
     let data = state.data.lock();
     let user_name = match valid_login_session(config, &data, &cookies, Utc::now()) {
@@ -57,7 +65,7 @@ pub async fn handle_portal_page(
     let html = unwrap_or_500!(
         config
             .renderer
-            .render("portal.html", context!(login_sessions))
+            .render("portal.html", context!(login_sessions, is_unlocked))
     );
 
     ([("content-type", "text/html")], html).into_response()

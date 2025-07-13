@@ -9,6 +9,10 @@
 <body>
 <h1>{{ "Knock portal" | text }}</h1>
 
+{% if not is_unlocked %}
+    <h2>{{ "Unlock system" | text }}</h2>
+{% endif %}
+
 <h2>{{ "Create guest link" | text }}</h2>
 <form id="guest-form">
     <div class="field">

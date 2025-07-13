@@ -14,6 +14,7 @@ getrandom = "0.3.3"
 hex = "0.4.3"
 minijinja = { version = "2.11.0" }
 parking_lot = "0.12.3"
+reqwest = { version = "0.12.22", features = ["json"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 sha2 = "0.10.9"

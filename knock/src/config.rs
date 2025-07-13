@@ -24,7 +24,6 @@ pub struct Config {
     pub guest_link_max_expiration: TimeDelta,
     pub guest_session_cookie: String,
     pub guest_session_expiration: TimeDelta,
-    pub renderer: TemplateRenderer,
     pub ip_session_expiration: TimeDelta,
     pub login_bind: String,
     pub login_hostname: String,
@@ -34,7 +33,12 @@ pub struct Config {
     pub login_throttle: TimeDelta,
     pub portal_bind: String,
     pub portal_port: u16,
+    pub renderer: TemplateRenderer,
     pub totps_by_user: HashMap<String, Vec<TOTP>>,
+    pub unlock_api_host: String,
+    pub unlock_api_status_timeout: TimeDelta,
+    pub unlock_api_unlock_throttle: TimeDelta,
+    pub unlock_api_unlock_timeout: TimeDelta,
     pub valid_hosts: HashSet<String>,
 }
 
@@ -75,6 +79,7 @@ impl Config {
         Ok(Config {
             allowed_networks,
             app_token_expiration: parse_duration(&config.app_token_expiration)?,
+            cookie_domain: config.cookie_domain,
             data_file: config.data_file,
             data_persistence_interval: parse_duration(&config.data_persistence_interval)?,
             failed_login_ban: parse_duration(&config.failed_login_ban)?,
@@ -86,9 +91,7 @@ impl Config {
             guest_link_max_expiration: parse_duration(&config.guest_link_max_expiration)?,
             guest_session_cookie: config.guest_session_cookie,
             guest_session_expiration: parse_duration(&config.guest_session_expiration)?,
-            renderer,
             ip_session_expiration: parse_duration(&config.ip_session_expiration)?,
-            cookie_domain: config.cookie_domain,
             login_bind: config.login_bind,
             login_hostname: config.login_hostname,
             login_port: config.login_port,
@@ -97,7 +100,12 @@ impl Config {
             login_throttle: parse_duration(&config.login_throttle)?,
             portal_bind: config.portal_bind,
             portal_port: config.portal_port,
+            renderer,
             totps_by_user,
+            unlock_api_host: config.unlock_api_host,
+            unlock_api_status_timeout: parse_duration(&config.unlock_api_status_timeout)?,
+            unlock_api_unlock_throttle: parse_duration(&config.unlock_api_unlock_throttle)?,
+            unlock_api_unlock_timeout: parse_duration(&config.unlock_api_unlock_timeout)?,
             valid_hosts,
         })
     }
@@ -130,6 +138,10 @@ struct EnvConfig {
     login_throttle: String,
     portal_bind: String,
     portal_port: u16,
+    unlock_api_host: String,
+    unlock_api_status_timeout: String,
+    unlock_api_unlock_throttle: String,
+    unlock_api_unlock_timeout: String,
     users_file: PathBuf,
     valid_hosts: String,
 }
