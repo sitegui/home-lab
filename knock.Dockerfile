@@ -1,7 +1,7 @@
 FROM docker.io/library/rust:1.85.1-slim AS builder
 
 WORKDIR /app
-RUN apt-get update -y && apt-get install -y libssl-dev
+RUN apt-get update -y && apt-get install -y pkg-config libssl-dev
 COPY Cargo.lock Cargo.toml ./
 COPY home-lab/Cargo.toml home-lab/
 COPY knock/Cargo.toml knock/
