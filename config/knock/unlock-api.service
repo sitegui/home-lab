@@ -1,0 +1,11 @@
+[Unit]
+Description = Unlock API
+
+[Service]
+WorkingDirectory = %h/home-lab
+ExecStart = %h/home-lab/target/release/home-lab run-unlock-api 8081
+Restart = always
+RestartSec = 10
+
+[Install]
+WantedBy = default.target
