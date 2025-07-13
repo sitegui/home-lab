@@ -40,7 +40,7 @@
     <tbody>
     {% for session in login_sessions %}
         <tr>
-            <td>{{ session.origin_ip }}</td>
+            <td><code>{{ session.origin_ip }}</code></td>
             <td>{{ session.created_at }}</td>
             <td>{{ session.expires_at }}</td>
         </tr>

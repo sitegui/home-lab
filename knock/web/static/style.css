@@ -53,3 +53,13 @@ button {
     border: 1px #f33 solid;
     padding: 2px;
 }
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    padding: 5px;
+    border: thin gray solid;
+}

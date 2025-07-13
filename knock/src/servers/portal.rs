@@ -48,8 +48,8 @@ pub async fn handle_portal_page(
         if session.user_name == user_name {
             login_sessions.push(LoginSessionData {
                 origin_ip: session.origin_ip,
-                created_at: session.created_at.format("%Y-%m-%d %H:%M:%S%Z").to_string(),
-                expires_at: session.expires_at.format("%Y-%m-%d %H:%M:%S%Z").to_string(),
+                created_at: session.created_at.format("%Y-%m-%d %H:%M %Z").to_string(),
+                expires_at: session.expires_at.format("%Y-%m-%d %H:%M %Z").to_string(),
             });
             login_session_hashes.insert(session.value_hash);
         }
