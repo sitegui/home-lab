@@ -3,6 +3,7 @@ body {
     max-width: 1000px;
     margin: 10px auto;
     overflow-wrap: anywhere;
+    padding: 0 5px;
 }
 
 * {
