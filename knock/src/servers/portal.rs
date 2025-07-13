@@ -129,9 +129,13 @@ pub async fn post_unlock_system(
     ));
 
     tracing::info!("Unlocking system initialized by {}", user);
-    unwrap_or_400!(state.unlock_api.unlock(&body.password).await);
+    let unlocked = unwrap_or_500!(state.unlock_api.unlock(&body.password).await);
 
-    StatusCode::OK.into_response()
+    if unlocked {
+        StatusCode::OK.into_response()
+    } else {
+        StatusCode::BAD_REQUEST.into_response()
+    }
 }
 
 fn valid_login_session(
