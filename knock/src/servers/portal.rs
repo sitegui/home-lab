@@ -12,6 +12,7 @@ use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
 use minijinja::context;
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use std::sync::Arc;
@@ -106,6 +107,30 @@ pub async fn post_guest_link(
     let new_url = unwrap_or_500!(data.create_guest_link(login_session_hash, body.url, expiration));
 
     Json(GuestLinkResponse { url: new_url }).into_response()
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UnlockSystemRequest {
+    password: String,
+}
+
+pub async fn post_unlock_system(
+    cookies: CookieJar,
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<UnlockSystemRequest>,
+) -> Response {
+    let config = &state.config;
+
+    unwrap_or_403!(valid_login_session(
+        config,
+        &state.data.lock(),
+        &cookies,
+        Utc::now()
+    ));
+
+    unwrap_or_400!(state.unlock_api.unlock(&body.password).await);
+
+    StatusCode::OK.into_response()
 }
 
 fn valid_login_session(

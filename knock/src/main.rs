@@ -22,7 +22,7 @@ use crate::persistence::load_and_spawn_persist_loop;
 use crate::servers::forward_auth::handle_forward_auth;
 use crate::servers::forward_auth::logger::Logger;
 use crate::servers::login::{handle_login_action, handle_login_page};
-use crate::servers::portal::{handle_portal_page, post_guest_link};
+use crate::servers::portal::{handle_portal_page, post_guest_link, post_unlock_system};
 use crate::terminate::TERMINATE;
 use crate::throttle::Throttle;
 use crate::unlock_api::UnlockApi;
@@ -100,6 +100,7 @@ async fn main() -> anyhow::Result<()> {
     let portal_router = Router::new()
         .route("/", get(handle_portal_page))
         .route("/api/v1/guest-link", post(post_guest_link))
+        .route("/api/v1/unlock-system", post(post_unlock_system))
         .route("/static/{file}", get(handle_static_file))
         .with_state(state.clone());
     tracing::info!("Portal listening on {}", portal_listener.local_addr()?);

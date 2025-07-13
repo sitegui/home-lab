@@ -11,6 +11,15 @@
 
 {% if not is_unlocked %}
     <h2>{{ "Unlock system" | text }}</h2>
+    <form id="unlock-form">
+        <div class="field">
+            <label for="unlock-password">{{ "Password:" | text }}</label>
+            <input type="password" id="unlock-password" required/>
+        </div>
+        <button type="submit" id="unlock-submit">{{ "Unlock" | text }}</button>
+
+        <p id="unlock-error" style="display: none" class="error">{{ "Failed to process request" | text }}</p>
+    </form>
 {% endif %}
 
 <h2>{{ "Create guest link" | text }}</h2>

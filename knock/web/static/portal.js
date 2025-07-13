@@ -33,6 +33,36 @@ document.getElementById('guest-form').addEventListener('submit', (event) => {
   })
 })
 
+document.getElementById('unlock-form').addEventListener('submit', (event) => {
+  event.preventDefault()
+  const password = document.getElementById('unlock-password').value
+  const submitEl = document.getElementById('unlock-submit')
+  const errorEl = document.getElementById('unlock-error')
+
+  submitEl.disabled = true
+  hide(errorEl)
+
+  fetch('api/v1/unlock-system', {
+    method: 'POST', headers: {
+      'Content-Type': 'application/json'
+    }, body: JSON.stringify({
+      password
+    })
+  }).then(response => {
+    if (!response.ok) {
+      throw new Error(response.statusText)
+    }
+    return response.json()
+  }).then(() => {
+    window.location.reload()
+  }).catch(error => {
+    show(errorEl)
+    console.error(error)
+  }).finally(() => {
+    submitEl.disabled = false
+  })
+})
+
 function hide(el) {
   el.style.display = 'none'
 }
