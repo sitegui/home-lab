@@ -1,7 +1,7 @@
 {
   "en": {
     "6 digits": "6 digits",
-    "Active sessions": "Active sessions",
+    "Sessions": "Sessions",
     "Code:": "Code:",
     "Create guest link": "Create guest link",
     "Create": "Create",
@@ -24,7 +24,7 @@
   },
   "fr": {
     "6 digits": "6 chiffres",
-    "Active sessions": "Sessions actives",
+    "Sessions": "Sessions",
     "Code:": "Code :",
     "Create guest link": "Créer un lien d'invité",
     "Create": "Créer",

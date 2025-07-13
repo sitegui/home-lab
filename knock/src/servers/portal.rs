@@ -43,7 +43,6 @@ pub async fn handle_portal_page(
     }
 
     let mut login_sessions = Vec::new();
-    let mut login_session_hashes = HashSet::new();
     for session in data.login_sessions.iter() {
         if session.user_name == user_name {
             login_sessions.push(LoginSessionData {
@@ -51,9 +50,9 @@ pub async fn handle_portal_page(
                 created_at: session.created_at.format("%Y-%m-%d %H:%M %Z").to_string(),
                 expires_at: session.expires_at.format("%Y-%m-%d %H:%M %Z").to_string(),
             });
-            login_session_hashes.insert(session.value_hash);
         }
     }
+    login_sessions.sort_by(|a, b| b.expires_at.cmp(&a.expires_at));
 
     let html = unwrap_or_500!(
         config
