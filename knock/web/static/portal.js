@@ -52,8 +52,6 @@ document.getElementById('unlock-form').addEventListener('submit', (event) => {
     if (!response.ok) {
       throw new Error(response.statusText)
     }
-    return response.json()
-  }).then(() => {
     window.location.reload()
   }).catch(error => {
     show(errorEl)

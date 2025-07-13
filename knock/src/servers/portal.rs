@@ -121,13 +121,14 @@ pub async fn post_unlock_system(
 ) -> Response {
     let config = &state.config;
 
-    unwrap_or_403!(valid_login_session(
+    let (user, _) = unwrap_or_403!(valid_login_session(
         config,
         &state.data.lock(),
         &cookies,
         Utc::now()
     ));
 
+    tracing::info!("Unlocking system initialized by {}", user);
     unwrap_or_400!(state.unlock_api.unlock(&body.password).await);
 
     StatusCode::OK.into_response()
