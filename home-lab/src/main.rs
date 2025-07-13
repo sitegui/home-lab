@@ -24,7 +24,7 @@ enum Cli {
     Unlock,
     /// Start a simple HTTP server that can be used to unlock the internal disk
     RunUnlockApi {
-        #[clap(long, default_value = "127.0.0.1")]
+        #[clap(long, default_value = "0.0.0.0")]
         bind: String,
         port: u16,
     },
