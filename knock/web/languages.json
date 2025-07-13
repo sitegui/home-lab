@@ -20,7 +20,10 @@
     "Invalid credentials, try again": "Invalid credentials, try again",
     "Origin IP": "Origin IP",
     "Created at": "Created at",
-    "Expires at": "Expires at"
+    "Expires at": "Expires at",
+    "Unlock system": "Unlock system",
+    "Password:": "Password:",
+    "Unlock": "Unlock"
   },
   "fr": {
     "6 digits": "6 chiffres",
@@ -43,6 +46,9 @@
     "Invalid credentials, try again": "Informations incorrectes, merci de reéssayer",
     "Origin IP": "IP d'origine",
     "Created at": "Créé le",
-    "Expires at": "Expire le"
+    "Expires at": "Expire le",
+    "Unlock system": "Débloquer système",
+    "Password:": "Mot de passe :",
+    "Unlock": "Débloquer"
   }
 }
