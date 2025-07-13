@@ -56,14 +56,6 @@ pub fn build_login_redirection(
     Redirect::temporary(&url).into_response()
 }
 
-pub fn escape_html(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-}
-
 pub fn random_string() -> anyhow::Result<String> {
     let mut random_bytes = [0u8; 16];
     getrandom::fill(&mut random_bytes)

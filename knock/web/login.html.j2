@@ -1,26 +1,27 @@
 <!DOCTYPE html>
-<html lang="[[en]]">
+<html lang="{{ "en" | text }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{message}}</title>
+    <title>{{ message_key | text }}</title>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 <form action="/" method="post" class="login-form" onsubmit="this.querySelector('button').disabled = true">
-    <div class="form-title">{{message}}</div>
+    <div class="form-title">{{ message_key | text }}</div>
 
-    <input type="hidden" name="callback" value="{{callback}}"/>
+    <input type="hidden" name="callback" value="{{ callback }}"/>
     <div class="field">
-        <label for="username">[[Username:]]</label>
+        <label for="username">{{ "Username:" | text }}</label>
         <input type="text" name="username" id="username" required autofocus/>
     </div>
     <div class="field">
-        <label for="token">[[Code:]]</label>
-        <input type="text" name="token" id="token" placeholder="[[6 digits]]" pattern="[0-9]{6}" maxlength="6"
+        <label for="token">{{ "Code:" | text }}</label>
+        <input type="text" name="token" id="token" placeholder="{{ "6 digits" | text }}" pattern="[0-9]{6}"
+               maxlength="6"
                required inputmode="numeric"/>
     </div>
-    <button type="submit">[[Login]]</button>
+    <button type="submit">{{ "Login" | text }}</button>
 </form>
 </body>
 </html>

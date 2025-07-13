@@ -1,5 +1,5 @@
 use crate::AppState;
-use crate::common::{check_valid_host, create_cookie, escape_html, read_client_ip};
+use crate::common::{check_valid_host, create_cookie, read_client_ip};
 use crate::config::Config;
 use crate::data::{Ip, User};
 use anyhow::Context;
@@ -9,6 +9,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::CookieJar;
 use chrono::Utc;
+use minijinja::context;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use totp_rs::TOTP;
@@ -136,8 +137,6 @@ pub async fn handle_login_action(
 }
 
 fn render_login_page(config: &Config, callback: &str, message: Option<LoginMessage>) -> Response {
-    let translator = unwrap_or_500!(config.i18n.translator(&config.i18n_language));
-
     let message_key = match message {
         None => "You need to authenticate",
         Some(LoginMessage::ExpiredLoginSession) => "Your login session has expired",
@@ -147,14 +146,11 @@ fn render_login_page(config: &Config, callback: &str, message: Option<LoginMessa
         Some(LoginMessage::ExpiredGuestLink) => "This link has expired",
         Some(LoginMessage::InvalidCredentials) => "Invalid credentials, try again",
     };
-    let message = translator.translate(message_key);
-
-    let login_html =
-        unwrap_or_500!(translator.translate_placeholders(include_str!("../../web/login.html")));
-
-    let login_html = login_html
-        .replace("{{callback}}", &escape_html(callback))
-        .replace("{{message}}", &escape_html(message));
+    let login_html = unwrap_or_500!(
+        config
+            .renderer
+            .render("login.html", context!(callback, message_key))
+    );
 
     ([("content-type", "text/html")], login_html).into_response()
 }

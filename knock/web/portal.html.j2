@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="{{ "en" | text }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ "Knock portal" | text }}</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<h1>{{ "Knock portal" | text }}</h1>
+
+<h2>{{ "Create guest link" | text }}</h2>
+<form id="guest-form">
+    <div class="field">
+        <label for="guest-url">{{ "Link:" | text }}</label>
+        <input type="text" id="guest-url" required/>
+    </div>
+    <div class="field">
+        <label for="guest-expiration">{{ "Expiration (days):" | text }}</label>
+        <input type="number" id="guest-expiration" required min="1" max="365" step="1" value="30">
+    </div>
+    <button type="submit" id="guest-submit">{{ "Create" | text }}</button>
+
+    <p id="guest-output-container" style="display: none">
+        {{ "Created link:" | text }}<br><span id="guest-output"></span>
+    </p>
+
+    <p id="guest-error" style="display: none" class="error">{{ "Failed to process request" | text }}</p>
+</form>
+
+<h2>{{ "Active sessions" | text }}</h2>
+<table>
+    <thead>
+    <tr>
+        <th>{{ "Origin IP" | text }}</th>
+        <th>{{ "Created at" | text }}</th>
+        <th>{{ "Expires at" | text }}</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for session in login_sessions %}
+        <tr>
+            <td>{{ session.origin_ip }}</td>
+            <td>{{ session.created_at }}</td>
+            <td>{{ session.expires_at }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<script src="static/portal.js"></script>
+</body>
+</html>

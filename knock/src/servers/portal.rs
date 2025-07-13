@@ -1,5 +1,5 @@
 use crate::AppState;
-use crate::common::{build_login_redirection, check_valid_host, escape_html, read_header};
+use crate::common::{build_login_redirection, check_valid_host, read_header};
 use crate::config::Config;
 use crate::data::Data;
 use crate::parse_duration::parse_duration;
@@ -11,6 +11,7 @@ use axum::http::{HeaderMap, Uri};
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
+use minijinja::context;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::net::IpAddr;
@@ -34,10 +35,6 @@ pub async fn handle_portal_page(
         }
     };
 
-    let translator = unwrap_or_500!(config.i18n.translator(&config.i18n_language));
-    let html =
-        unwrap_or_500!(translator.translate_placeholders(include_str!("../../web/portal.html")));
-
     #[derive(Serialize)]
     struct LoginSessionData {
         origin_ip: IpAddr,
@@ -57,9 +54,12 @@ pub async fn handle_portal_page(
             login_session_hashes.insert(session.value_hash);
         }
     }
-    let login_sessions_str = serde_json::to_string_pretty(&login_sessions).unwrap_or_default();
 
-    let html = html.replace("{{login_sessions}}", &escape_html(&login_sessions_str));
+    let html = unwrap_or_500!(
+        config
+            .renderer
+            .render("portal.html", context!(login_sessions))
+    );
 
     ([("content-type", "text/html")], html).into_response()
 }

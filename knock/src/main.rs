@@ -4,13 +4,13 @@ mod ban_timer;
 mod common;
 mod config;
 mod data;
-mod i18n;
 mod network;
 mod parse_duration;
 mod persistence;
 mod serialize_to_string;
 mod servers;
 mod string_hash;
+mod template_renderer;
 mod terminate;
 mod throttle;
 
