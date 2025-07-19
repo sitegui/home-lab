@@ -3,12 +3,13 @@ use crate::home::home;
 use crate::list_files::list_files;
 use anyhow::Context;
 use itertools::Itertools;
+use regex::Regex;
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
-    // TODO: pull new container images when Pull = never
-
     let path = path.as_deref().unwrap_or(Path::new("config"));
     let files = if path.metadata()?.is_file() {
         vec![path.to_owned()]
@@ -17,29 +18,15 @@ pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
     };
 
     let home = home()?;
-    let containers_dir = home.clone().join(".config/containers/systemd");
+    let containers_dir = home.join(".config/containers/systemd");
     let user_dir = home.join(".config/systemd/user");
     fs::create_dir_all(&containers_dir)?;
     fs::create_dir_all(&user_dir)?;
 
-    let units: Vec<_> = files
-        .into_iter()
-        .filter_map(|file| {
-            let kind = match file.extension()?.to_str()? {
-                "target" => UnitKind::Target,
-                "service" => UnitKind::Service,
-                "network" => UnitKind::Network,
-                "container" => UnitKind::Container,
-                "socket" => UnitKind::Socket,
-                "timer" => UnitKind::Timer,
-                _ => return None,
-            };
-
-            Some(UnitFile::new(&containers_dir, &user_dir, file, kind))
-        })
-        .try_collect()?;
-
+    let units = load_units(files, &containers_dir, &user_dir)?;
     tracing::info!("Detected {} units", units.len());
+
+    pull_missing_images(&units)?;
 
     let mut updated_units = vec![];
     for unit in units {
@@ -83,15 +70,80 @@ pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn load_units(
+    files: Vec<PathBuf>,
+    containers_dir: &PathBuf,
+    user_dir: &PathBuf,
+) -> anyhow::Result<Vec<UnitFile>> {
+    files
+        .into_iter()
+        .filter_map(|file| {
+            let kind = match file.extension()?.to_str()? {
+                "target" => UnitKind::Target,
+                "service" => UnitKind::Service,
+                "network" => UnitKind::Network,
+                "container" => UnitKind::Container,
+                "socket" => UnitKind::Socket,
+                "timer" => UnitKind::Timer,
+                _ => return None,
+            };
+
+            Some(UnitFile::new(&containers_dir, &user_dir, file, kind))
+        })
+        .try_collect()
+}
+
+fn pull_missing_images(units: &[UnitFile]) -> anyhow::Result<()> {
+    let mut images = BTreeSet::new();
+    for unit in units {
+        if unit.kind == UnitKind::Container {
+            static IMAGE_REGEX: LazyLock<Regex> =
+                LazyLock::new(|| Regex::new(r"^Image *= *(.*)$").unwrap());
+
+            for line in unit.contents.lines() {
+                if let Some(capture) = IMAGE_REGEX.captures(line) {
+                    images.insert(capture.get(1).unwrap().as_str());
+                }
+            }
+        }
+    }
+
+    tracing::info!("Detected {} used images", images.len());
+    let mut missing_images = vec![];
+    for image in images {
+        let exists = Child::new("podman")
+            .args(["image", "exists", image])
+            .ignore_status()
+            .run()?
+            .status()
+            .success();
+
+        if !exists {
+            missing_images.push(image);
+        }
+    }
+
+    if !missing_images.is_empty() {
+        tracing::info!("Will pull {} missing images", missing_images.len());
+        for image in missing_images {
+            tracing::info!("Pulling {}", image);
+            Child::new("podman").args(["pull", image]).run()?;
+        }
+    }
+
+    Ok(())
+}
+
 #[derive(Debug)]
 struct UnitFile {
     target_path: PathBuf,
     enable_name: Option<String>,
     restart_name: Option<String>,
     contents: String,
+    kind: UnitKind,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum UnitKind {
     Target,
     Service,
@@ -147,6 +199,7 @@ impl UnitFile {
             restart_name,
             target_path,
             contents,
+            kind,
         })
     }
 }

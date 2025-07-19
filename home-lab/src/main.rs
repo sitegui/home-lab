@@ -42,7 +42,7 @@ enum Cli {
         /// Force copying and restarting the services even when the contents are the same
         #[clap(long)]
         force: bool,
-        /// Look for units to install in this directory
+        /// Only install this unit or units in this directory
         path: Option<PathBuf>,
     },
     /// Convert the official docker compose file into podman systemd unit files
