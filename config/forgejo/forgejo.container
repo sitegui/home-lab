@@ -9,21 +9,17 @@ ContainerName = forgejo
 Image = codeberg.org/forgejo/forgejo:12
 Pull = never
 AutoUpdate = local
-UserNS = keep-id:uid=1000
 Volume = %h/protected/forgejo/data:/data
 Volume = /etc/timezone:/etc/timezone:ro
 Volume = /etc/localtime:/etc/localtime:ro
 Volume = %h/protected/forgejo/db-secrets:/db-secrets:ro
 Network = forgejo.network
 Network = caddy-forgejo.network
-Environment = USER_UID=1000
-Environment = USER_GID=1000
 Environment = FORGEJO__database__DB_TYPE=postgres
 Environment = FORGEJO__database__HOST=forgejo-db:5432
 Environment = FORGEJO__database__NAME=forgejo
 Environment = FORGEJO__database__USER=forgejo
 Environment = FORGEJO__database__PASSWD__FILE=/db-secrets/password
-Environment = FORGEJO__log__LEVEL=Trace
 
 [Install]
 WantedBy = protected.target
