@@ -92,7 +92,7 @@ monitoring.sitegui.dev {
     reverse_proxy grafana:3000
 }
 
-git-private.sitegui.dev {
+git.sitegui.dev {
     import external_sockets
     import logging
     import auth
