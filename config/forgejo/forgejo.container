@@ -6,15 +6,19 @@ RestartSec = 10
 
 [Container]
 ContainerName = forgejo
-Image = codeberg.org/forgejo/forgejo:12
+Image = codeberg.org/forgejo/forgejo:12-rootless
 Pull = never
 AutoUpdate = local
-Volume = %h/protected/forgejo/data:/data
+UserNS = keep-id:uid=1000
+Volume = %h/protected/forgejo/data:/var/lib/gitea
+Volume = %h/protected/forgejo/conf:/etc/gitea
 Volume = /etc/timezone:/etc/timezone:ro
 Volume = /etc/localtime:/etc/localtime:ro
 Volume = %h/protected/forgejo/db-secrets:/db-secrets:ro
 Network = forgejo.network
 Network = caddy-forgejo.network
+Environment = USER_UID=1000
+Environment = USER_GID=1000
 Environment = FORGEJO__database__DB_TYPE=postgres
 Environment = FORGEJO__database__HOST=forgejo-db:5432
 Environment = FORGEJO__database__NAME=forgejo
