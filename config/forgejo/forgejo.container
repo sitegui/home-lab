@@ -24,6 +24,8 @@ Environment = FORGEJO__database__HOST=forgejo-db:5432
 Environment = FORGEJO__database__NAME=forgejo
 Environment = FORGEJO__database__USER=forgejo
 Environment = FORGEJO__database__PASSWD__FILE=/db-secrets/password
+Environment = FORGEJO__repository__ENABLE_PUSH_CREATE_USER=true
+Environment = FORGEJO__repository__DEFAULT_PUSH_CREATE_PRIVATE=false
 
 [Install]
 WantedBy = protected.target
