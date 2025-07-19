@@ -11,7 +11,7 @@ Pull = never
 AutoUpdate = local
 Volume = /:/rootfs:ro,rslave
 Exec = --path.rootfs=/rootfs
-Network = prometheus-node-exporter.network
+Network = host
 PodmanArgs = --pid=host
 UserNS = keep-id
 

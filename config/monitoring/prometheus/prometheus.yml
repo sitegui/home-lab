@@ -8,7 +8,7 @@ scrape_configs:
       - targets: [ 'localhost:9090' ]
   - job_name: 'node'
     static_configs:
-      - targets: [ 'node-exporter:9100' ]
+      - targets: [ 'http://host.containers.internal:9100' ]
   - job_name: 'alertmanager'
     static_configs:
       - targets: [ 'alertmanager:9093' ]

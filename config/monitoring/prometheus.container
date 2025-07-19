@@ -15,7 +15,6 @@ Volume = %h/bare/prometheus/data:/prometheus
 Network = alertmanager-prometheus.network
 Network = caddy-prometheus.network
 Network = grafana-prometheus.network
-Network = prometheus-node-exporter.network
 Exec = --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --web.external-url=https://prometheus.sitegui.dev:8080
 
 [Install]
