@@ -1,0 +1,21 @@
+[Unit]
+
+[Service]
+Restart = always
+RestartSec = 10
+
+[Container]
+ContainerName = forgejo-db
+Image = docker.io/library/postgres:14
+Pull = never
+UserNS = keep-id
+AutoUpdate = local
+Volume = %h/protected/forgejo/db-data:/var/lib/postgresql/data
+Volume = %h/protected/forgejo/db-secrets:/secrets:ro
+Network = forgejo.network
+Environment = POSTGRES_USER=forgejo
+Environment = POSTGRES_PASSWORD_FILE=/secrets/password
+Environment = POSTGRES_DB=forgejo
+
+[Install]
+WantedBy = protected.target
