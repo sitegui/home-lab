@@ -29,14 +29,23 @@ pub fn install_units(force: bool, path: Option<PathBuf>) -> anyhow::Result<()> {
     pull_missing_images(&units)?;
     auto_declare_networks(&containers_dir, &user_dir, &mut units)?;
 
-    let updated_units = install_unit(force, units)?;
+    let updated_units = copy_changed_units(force, &units)?;
 
     if !updated_units.is_empty() {
         enable_and_restart_services(&updated_units)?;
     }
 
     if path.is_none() {
-        // TODO: remove unused units
+        let desired_units: BTreeSet<_> = units.iter().map(|unit| &unit.target_path).collect();
+        let present_units = list_files(&containers_dir)?
+            .into_iter()
+            .chain(list_files(&user_dir)?);
+
+        for unit in present_units {
+            if !desired_units.contains(&unit) {
+                tracing::warn!("Extra file in target dirs detected: {}", unit.display());
+            }
+        }
     }
 
     Ok(())
@@ -163,7 +172,7 @@ fn auto_declare_networks(
     Ok(())
 }
 
-fn install_unit(force: bool, units: Vec<UnitFile>) -> anyhow::Result<Vec<UnitFile>> {
+fn copy_changed_units(force: bool, units: &[UnitFile]) -> anyhow::Result<Vec<&UnitFile>> {
     let mut updated_units = vec![];
 
     for unit in units {
@@ -185,7 +194,7 @@ fn install_unit(force: bool, units: Vec<UnitFile>) -> anyhow::Result<Vec<UnitFil
     Ok(updated_units)
 }
 
-fn enable_and_restart_services(updated_units: &[UnitFile]) -> anyhow::Result<()> {
+fn enable_and_restart_services(updated_units: &[&UnitFile]) -> anyhow::Result<()> {
     Child::new("systemctl")
         .args(["--user", "daemon-reload"])
         .run()?;
