@@ -105,24 +105,24 @@ fn backup_inner(
             check_percentage,
             &services,
         )?;
+
+        let last_successful_backup = protected_dir.join("last-successful-backup.txt");
+        let backup_dir = backup_disk.backup_dir(home);
+        fs::copy(
+            backup_dir.join("protected/last-backup-attempt.txt"),
+            &last_successful_backup,
+        )
+        .with_context(|| format!("failed to copy {}", last_successful_backup.display()))?;
+        let witness = fs::read_to_string(&last_successful_backup)
+            .with_context(|| format!("failed to read {}", last_successful_backup.display()))?;
+        ensure!(
+            witness == now,
+            "the backup witness file content is not the expected one"
+        );
+        tracing::info!("Witness file has expected content, backup is up to date");
     }
 
     tracing::info!("Backup check stats: {:?}", check_stats);
-
-    let last_successful_backup = protected_dir.join("last-successful-backup.txt");
-    let backup_dir = backup_disk.backup_dir(home);
-    fs::copy(
-        backup_dir.join("protected/last-backup-attempt.txt"),
-        &last_successful_backup,
-    )
-    .with_context(|| format!("failed to copy {}", last_successful_backup.display()))?;
-    let witness = fs::read_to_string(&last_successful_backup)
-        .with_context(|| format!("failed to read {}", last_successful_backup.display()))?;
-    ensure!(
-        witness == now,
-        "the backup witness file content is not the expected one"
-    );
-    tracing::info!("Witness file has expected content, backup is up to date");
 
     tracing::info!("Will unmount backup");
     Child::new("sudo")
