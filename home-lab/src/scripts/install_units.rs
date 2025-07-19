@@ -164,7 +164,7 @@ fn auto_declare_networks(
             containers_dir,
             user_dir,
             UnitKind::Network,
-            name,
+            format!("{}.network", name),
             "[Network]\n".to_owned(),
         )?);
     }
