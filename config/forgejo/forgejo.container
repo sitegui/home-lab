@@ -23,6 +23,7 @@ Environment = FORGEJO__database__HOST=forgejo-db:5432
 Environment = FORGEJO__database__NAME=forgejo
 Environment = FORGEJO__database__USER=forgejo
 Environment = FORGEJO__database__PASSWD__FILE=/db-secrets/password
+Environment = FORGEJO__log__LEVEL=Trace
 
 [Install]
 WantedBy = protected.target
