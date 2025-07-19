@@ -1,4 +1,4 @@
-FROM docker.io/library/rust:1.85.1-slim AS builder
+FROM docker.io/library/rust:1.88.0-slim AS builder
 
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y pkg-config libssl-dev

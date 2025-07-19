@@ -18,11 +18,11 @@ mod do_backup;
 mod list_services;
 mod start_service_on_drop;
 
-pub fn backup(check_percentage: f64) -> anyhow::Result<()> {
+pub fn backup(check_percentage: f64, target_service: Option<String>) -> anyhow::Result<()> {
     let start = Instant::now();
     let home = home()?;
 
-    let result = backup_inner(&home, check_percentage);
+    let result = backup_inner(&home, check_percentage, target_service);
     let elapsed_minutes = start.elapsed().as_secs_f64() / 60.0;
 
     let (title, message, priority) = match &result {
@@ -55,7 +55,11 @@ pub fn backup(check_percentage: f64) -> anyhow::Result<()> {
     result.map(|_| ())
 }
 
-fn backup_inner(home: &Path, check_percentage: f64) -> anyhow::Result<CheckStats> {
+fn backup_inner(
+    home: &Path,
+    check_percentage: f64,
+    target_service: Option<String>,
+) -> anyhow::Result<CheckStats> {
     let now = format!("{}\n", Utc::now());
     let protected_dir = home.join("protected");
     tracing::info!("Starting backup at {}", now.trim());
@@ -70,6 +74,16 @@ fn backup_inner(home: &Path, check_percentage: f64) -> anyhow::Result<CheckStats
     let services = list_services::list_services()?;
     let mut one_error = Ok(());
     for service in &services {
+        let service_bare_name = service
+            .name
+            .strip_suffix(".service")
+            .unwrap_or(&service.name);
+        if let Some(target_service) = &target_service
+            && target_service != service_bare_name
+        {
+            continue;
+        }
+
         if let Err(error) = backup_service(
             home,
             backup_disk,
@@ -83,13 +97,15 @@ fn backup_inner(home: &Path, check_percentage: f64) -> anyhow::Result<CheckStats
     }
     one_error?;
 
-    backup_other_files(
-        home,
-        backup_disk,
-        &mut check_stats,
-        check_percentage,
-        &services,
-    )?;
+    if target_service.is_none() {
+        backup_other_files(
+            home,
+            backup_disk,
+            &mut check_stats,
+            check_percentage,
+            &services,
+        )?;
+    }
 
     tracing::info!("Backup check stats: {:?}", check_stats);
 

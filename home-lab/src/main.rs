@@ -33,6 +33,9 @@ enum Cli {
     Backup {
         #[clap(long, default_value_t = 1.0)]
         check_percentage: f64,
+        /// If present, only this service will be backed up
+        #[clap(long)]
+        service: Option<String>,
     },
     /// Copy all sudo scripts to ~/sudo-scripts and edit the sudoers file to enable running them
     InstallSudoScripts,
@@ -74,7 +77,10 @@ fn main() -> anyhow::Result<()> {
     match Cli::parse() {
         Cli::Unlock => unlock()?,
         Cli::RunUnlockApi { bind, port } => run_unlock_api(bind, port)?,
-        Cli::Backup { check_percentage } => backup(check_percentage)?,
+        Cli::Backup {
+            check_percentage,
+            service,
+        } => backup(check_percentage, service)?,
         Cli::InstallSudoScripts => install_sudo_scripts()?,
         Cli::InstallUnits { force, path } => install_units(force, path)?,
         Cli::CompileNextcloudUnits {

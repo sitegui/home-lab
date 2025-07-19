@@ -15,13 +15,11 @@ pub fn backup_service(
     check_percentage: f64,
     service: &Service,
 ) -> anyhow::Result<()> {
-    tracing::info!("Backing up service: {}", service.name);
-
     if service.writable_binds.is_empty() {
-        tracing::info!("Nothing to do");
         return Ok(());
     }
 
+    tracing::info!("Backing up service: {}", service.name);
     let mut stopped_service =
         stop_service(service.name.clone()).context("failed to stop service")?;
     let sources = backup_disk.source_dirs(home);
